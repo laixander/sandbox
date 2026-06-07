@@ -1,10 +1,10 @@
-# Nuxt 3 + Pinia + NuxtUI Data Seeder
+# Nuxt 4 + Pinia + NuxtUI Data Seeder
 
 Here is a detailed reference summary of the Nuxt 4 + Pinia + Faker.js + NuxtUI setup with local storage persistence.
 
 ## 🛠️ Tech Stack & Dependencies
 
-* **Nuxt 3 (`nuxt`)**: The core Vue framework providing routing, auto-imports, and server-side rendering (SSR).
+* **Nuxt 4 (`nuxt`)**: The core Vue framework providing routing, auto-imports, and server-side rendering (SSR).
 * **NuxtUI (`@nuxt/ui`)**: A UI component library tailored for Nuxt that automatically integrates Tailwind CSS and provides ready-to-use components (buttons, cards, avatars, icons).
 * **Pinia (`@pinia/nuxt` & `pinia`)**: The official state management library for Vue/Nuxt, replacing Vuex.
 * **Faker.js (`@faker-js/faker`)**: A utility library used to generate massive amounts of realistic fake data (names, emails, avatars, UUIDs) for testing and UI development.
