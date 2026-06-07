@@ -22,6 +22,22 @@ export const useUserStore = defineStore('userStore', {
                 this.users = SeederService.clearUsers()
                 this.isLoading = false
             }, 300)
+        },
+
+        // --- CRUD ACTIONS ---
+        createUser(user: User) {
+            this.users.unshift(user) // Prepend new data entries to the list
+        },
+
+        updateUser(id: string, updatedData: Partial<User>) {
+            const index = this.users.findIndex(u => u.id === id)
+            if (index !== -1) {
+                this.users[index] = { ...this.users[index], ...updatedData } as User
+            }
+        },
+
+        deleteUser(id: string) {
+            this.users = this.users.filter(u => u.id !== id)
         }
     },
 
@@ -30,7 +46,6 @@ export const useUserStore = defineStore('userStore', {
         hasUsers: (state) => state.users.length > 0
     },
 
-    // Enable persistence to localStorage
     persist: {
         storage: persistedState.localStorage
     }
