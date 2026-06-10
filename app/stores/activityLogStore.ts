@@ -3,9 +3,13 @@
 // ============================================================================
 // Central store for all real user-initiated activity logs across every module.
 // Seeder/mock-data operations are intentionally excluded from logging.
-//
 // Max capacity: 500 entries (FIFO — oldest are trimmed when limit is reached).
 // Persisted to localStorage via nuxt-pinia-plugin-persistedstate.
+//
+// Usage:
+//   const store = useActivityLogStore()
+//   store.addLog('Users', 'created', 'Created user Jane Doe')
+//   store.clearLogs()
 
 import { defineStore } from 'pinia'
 import type { ActivityLog, ActivityLogAction } from '~/types/activityLog'

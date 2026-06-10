@@ -1,6 +1,13 @@
 // ============================================================================
-// Imports
+// Composable: useChart
 // ============================================================================
+// Provides standardized Chart.js configuration and dataset helpers.
+// Ensures consistent styling across all charts in the application.
+// Auto-imported — no manual import needed.
+//
+// Usage:
+//   const { defaultOptions, lineDataset } = useChart()
+//   const chartData = { datasets: [lineDataset({ label: 'Sales', data: [1, 2, 3] })] }
 import {
     Chart as ChartJS,
     Title,
@@ -75,15 +82,6 @@ export interface RadarDatasetConfig {
     backgroundColor?: string
 }
 
-// ============================================================================
-// Composable
-// ============================================================================
-
-/**
- * Chart Composable
- * Provides standardized Chart.js configuration and dataset helpers.
- * Ensures consistent styling across all charts in the application.
- */
 export const useChart = () => {
 
     // -----------------------------------------------------------------------

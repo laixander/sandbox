@@ -19,6 +19,6 @@ export interface KanbanColumn {
     id: string
     title: string
     icon: string
-    dotColor: string    // Tailwind class, e.g. 'bg-blue-500'
+    color: string    // Tailwind class, e.g. 'bg-blue-500'
     cards: KanbanCard[]
 }

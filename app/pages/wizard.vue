@@ -101,7 +101,7 @@ const handleSubmit = async () => {
 
     store.createUser(user)
     log('Wizard', 'created', `Created user ${user.name} via wizard`, { meta: { role: user.role } })
-    notify('User Created', `${user.name} has been added to the system.`, 'success', 'Wizard')
+    notify('user_created', { userName: user.name }, 'success', 'Wizard')
     toast.success('User Created', `${user.name} was added successfully.`)
 
     createdUser.value = user

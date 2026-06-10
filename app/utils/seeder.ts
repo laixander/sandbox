@@ -1,21 +1,33 @@
+// ============================================================================
+// Utility: SeederService
+// ============================================================================
+// Provides mock data generation using faker.js for demo purposes.
+// Used primarily by stores to populate the initial state when deploying demo data.
+//
+// Usage:
+//   import { SeederService } from '~/utils/seeder'
+//   const mockUsers = SeederService.generateUsers(5)
+
 import { faker } from '@faker-js/faker'
 import type { User } from '../types/user'
 import type { DashboardData, StatCardData, ChartDataPoint } from '../types/dashboard'
+import type { KanbanCard } from '../types/kanban'
 
 export type { User } from '../types/user'
 export type { DashboardData } from '../types/dashboard'
+export type { KanbanCard } from '../types/kanban'
 
 // ── Palette constants (mirrored from useChart composable) ──────────────────
 const palette = {
-  blue:   { solid: 'rgb(14, 165, 233)',   soft: 'rgba(14, 165, 233, 0.15)' },
-  violet: { solid: 'rgb(139, 92, 246)',   soft: 'rgba(139, 92, 246, 0.15)' },
-  green:  { solid: 'rgb(34, 197, 94)',    soft: 'rgba(34, 197, 94, 0.15)' },
-  orange: { solid: 'rgb(249, 115, 22)',   soft: 'rgba(249, 115, 22, 0.15)' },
-  pink:   { solid: 'rgb(236, 72, 153)',   soft: 'rgba(236, 72, 153, 0.15)' },
-  teal:   { solid: 'rgb(20, 184, 166)',   soft: 'rgba(20, 184, 166, 0.15)' },
+  blue: { solid: 'rgb(14, 165, 233)', soft: 'rgba(14, 165, 233, 0.15)' },
+  violet: { solid: 'rgb(139, 92, 246)', soft: 'rgba(139, 92, 246, 0.15)' },
+  green: { solid: 'rgb(34, 197, 94)', soft: 'rgba(34, 197, 94, 0.15)' },
+  orange: { solid: 'rgb(249, 115, 22)', soft: 'rgba(249, 115, 22, 0.15)' },
+  pink: { solid: 'rgb(236, 72, 153)', soft: 'rgba(236, 72, 153, 0.15)' },
+  teal: { solid: 'rgb(20, 184, 166)', soft: 'rgba(20, 184, 166, 0.15)' },
 }
 
-const DAYS   = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'] as const
 const QUARTERS = ['Q1', 'Q2', 'Q3', 'Q4'] as const
 
@@ -26,6 +38,7 @@ const randInts = (count: number, min: number, max: number): number[] =>
 export const SeederService = {
   // ── User entity ────────────────────────────────────────────────────────
 
+  /** Generates a single mock user profile. */
   generateSingleUser(): User {
     return {
       id: faker.string.uuid(),
@@ -37,21 +50,24 @@ export const SeederService = {
     }
   },
 
+  /** Generates an array of mock users. */
   generateUsers(count: number = 5): User[] {
     return Array.from({ length: count }, () => this.generateSingleUser())
   },
 
+  /** Returns an empty array representing a cleared user state. */
   clearUsers(): User[] {
     return []
   },
 
   // ── Dashboard entity ───────────────────────────────────────────────────
 
+  /** Generates a complete mock dashboard data structure including all chart series. */
   generateDashboard(): DashboardData {
     // ── Stat Cards ─────────────────────────────────────────────────────
-    const totalUsers  = faker.number.int({ min: 8_000, max: 15_000 })
-    const sessions    = faker.number.int({ min: 800,   max: 3_000 })
-    const responseMs  = faker.number.int({ min: 180,   max: 420 })
+    const totalUsers = faker.number.int({ min: 8_000, max: 15_000 })
+    const sessions = faker.number.int({ min: 800, max: 3_000 })
+    const responseMs = faker.number.int({ min: 180, max: 420 })
 
     const statCards: StatCardData[] = [
       {
@@ -254,6 +270,7 @@ export const SeederService = {
     }
   },
 
+  /** Returns an empty state structure for the dashboard. */
   clearDashboard(): DashboardData {
     const emptyChart = (): ChartDataPoint => ({ labels: [], datasets: [] })
     const emptyStatCard = (title: string, icon: string): StatCardData => ({
@@ -277,5 +294,25 @@ export const SeederService = {
       polarData: emptyChart(),
       radarData: emptyChart(),
     }
+  },
+
+  // ── Kanban entity ──────────────────────────────────────────────────────
+
+  /** Generates a single mock Kanban card with random tags and priorities. */
+  generateSingleKanbanCard(): KanbanCard {
+    return {
+      id: faker.string.uuid(),
+      title: faker.company.catchPhrase(),
+      description: faker.datatype.boolean({ probability: 0.7 }) ? faker.lorem.paragraph() : undefined,
+      priority: faker.helpers.arrayElement(['low', 'medium', 'high', 'critical']),
+      tags: faker.helpers.arrayElements(['Bug', 'Feature', 'UI', 'Backend', 'Docs', 'Planning', 'Design', 'Research'], { min: 0, max: 3 }),
+      locked: faker.datatype.boolean({ probability: 0.1 }),
+      createdAt: faker.date.recent({ days: 30 }).toISOString(),
+    }
+  },
+
+  /** Generates an array of mock Kanban cards. */
+  generateKanbanCards(count: number = 5): KanbanCard[] {
+    return Array.from({ length: count }, () => this.generateSingleKanbanCard())
   },
 }

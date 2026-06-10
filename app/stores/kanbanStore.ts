@@ -1,160 +1,49 @@
+// ============================================================================
+// Store: kanbanStore
+// ============================================================================
+// Manages the state of the Kanban board, including columns and cards.
+// Persisted to localStorage via nuxt-pinia-plugin-persistedstate.
+//
+// Usage:
+//   const store = useKanbanStore()
+//   store.moveCard(cardId, fromColId, toColId)
+//   store.addCard('todo', newCardData)
+
 import { defineStore } from 'pinia'
 import type { KanbanCard, KanbanColumn } from '~/types/kanban'
-
-// ── Seed data factory ─────────────────────────────────────────────────────
-function makeCard(
-    title: string,
-    opts: Partial<Omit<KanbanCard, 'id' | 'title' | 'createdAt'>> & { daysAgo?: number } = {},
-): KanbanCard {
-    const { daysAgo = 0, ...rest } = opts
-    return {
-        id: crypto.randomUUID(),
-        title,
-        description: undefined,
-        priority: 'medium',
-        tags: [],
-        locked: false,
-        createdAt: new Date(Date.now() - daysAgo * 86_400_000).toISOString(),
-        ...rest,
-    }
-}
+import { SeederService } from '~/utils/seeder'
 
 // ── Column structure (always present, even after reset) ─────────────────
 function createColumnStructure(): KanbanColumn[] {
     return [
-        { id: 'backlog',     title: 'Backlog',     icon: 'i-lucide-inbox',            dotColor: 'bg-neutral-400', cards: [] },
-        { id: 'todo',        title: 'To Do',        icon: 'i-lucide-circle-dashed',    dotColor: 'bg-blue-500',    cards: [] },
-        { id: 'in-progress', title: 'In Progress',  icon: 'i-lucide-timer',            dotColor: 'bg-amber-500',   cards: [] },
-        { id: 'review',      title: 'Review',       icon: 'i-lucide-eye',              dotColor: 'bg-violet-500',  cards: [] },
-        { id: 'done',        title: 'Done',         icon: 'i-lucide-circle-check-big', dotColor: 'bg-green-500',   cards: [] },
+        { id: 'backlog', title: 'Backlog', icon: 'i-lucide-inbox', color: 'error', cards: [] },
+        { id: 'todo', title: 'To Do', icon: 'i-lucide-circle-dashed', color: 'blue', cards: [] },
+        { id: 'in-progress', title: 'In Progress', icon: 'i-lucide-timer', color: 'amber', cards: [] },
+        { id: 'review', title: 'Review', icon: 'i-lucide-eye', color: 'violet', cards: [] },
+        { id: 'done', title: 'Done', icon: 'i-lucide-circle-check-big', color: 'green', cards: [] },
     ]
 }
 
 function createInitialColumns(): KanbanColumn[] {
-    return [
-        {
-            id: 'backlog',
-            title: 'Backlog',
-            icon: 'i-lucide-inbox',
-            dotColor: 'bg-neutral-400',
-            cards: [
-                makeCard('Research competitor analysis', {
-                    description: 'Review top 5 competitors and document key findings for Q4 strategy.',
-                    priority: 'low',
-                    tags: ['Research'],
-                    daysAgo: 5,
-                }),
-                makeCard('Q4 Strategy Document', {
-                    description: 'Locked: pending executive review before prioritization can begin.',
-                    priority: 'high',
-                    tags: ['Planning', 'Strategy'],
-                    locked: true,
-                    daysAgo: 3,
-                }),
-            ],
-        },
-        {
-            id: 'todo',
-            title: 'To Do',
-            icon: 'i-lucide-circle-dashed',
-            dotColor: 'bg-blue-500',
-            cards: [
-                makeCard('Set up CI/CD pipeline', {
-                    description: 'Configure GitHub Actions for automated testing and deployment workflows.',
-                    priority: 'high',
-                    tags: ['DevOps'],
-                    daysAgo: 4,
-                }),
-                makeCard('Update user documentation', {
-                    description: 'Rewrite onboarding docs to reflect new UI changes in v2.',
-                    priority: 'low',
-                    tags: ['Docs'],
-                    daysAgo: 2,
-                }),
-                makeCard('API rate limiting', {
-                    description: 'Locked: compliance requirement — cannot be moved until legal sign-off.',
-                    priority: 'critical',
-                    tags: ['Backend', 'Security'],
-                    locked: true,
-                    daysAgo: 1,
-                }),
-            ],
-        },
-        {
-            id: 'in-progress',
-            title: 'In Progress',
-            icon: 'i-lucide-timer',
-            dotColor: 'bg-amber-500',
-            cards: [
-                makeCard('User authentication refactor', {
-                    description: 'Migrate from JWT to session-based auth with rotating refresh tokens.',
-                    priority: 'high',
-                    tags: ['Backend', 'Security'],
-                    daysAgo: 6,
-                }),
-                makeCard('Dashboard analytics v2', {
-                    description: 'Rebuild analytics charts with Chart.js for better performance.',
-                    priority: 'medium',
-                    tags: ['Frontend'],
-                    daysAgo: 3,
-                }),
-                makeCard('Mobile responsive fixes', {
-                    description: 'Fix layout issues on screens smaller than 768px.',
-                    priority: 'medium',
-                    tags: ['Frontend', 'CSS'],
-                    daysAgo: 1,
-                }),
-            ],
-        },
-        {
-            id: 'review',
-            title: 'Review',
-            icon: 'i-lucide-eye',
-            dotColor: 'bg-violet-500',
-            cards: [
-                makeCard('Payment integration', {
-                    description: 'Locked: pending legal and compliance sign-off before this can be merged.',
-                    priority: 'critical',
-                    tags: ['Backend', 'Finance'],
-                    locked: true,
-                    daysAgo: 7,
-                }),
-                makeCard('Performance audit', {
-                    description: 'Lighthouse audit + identify and document top 5 performance bottlenecks.',
-                    priority: 'medium',
-                    tags: ['DevOps', 'Performance'],
-                    daysAgo: 2,
-                }),
-            ],
-        },
-        {
-            id: 'done',
-            title: 'Done',
-            icon: 'i-lucide-circle-check-big',
-            dotColor: 'bg-green-500',
-            cards: [
-                makeCard('Initial project setup', {
-                    description: 'Project scaffolding with Nuxt 3 + Nuxt UI + Pinia.',
-                    priority: 'low',
-                    tags: ['Setup'],
-                    locked: true,    // archived — immutable
-                    daysAgo: 14,
-                }),
-                makeCard('Database schema design', {
-                    description: 'ERD and initial migration scripts for all core entities.',
-                    priority: 'high',
-                    tags: ['Backend'],
-                    daysAgo: 10,
-                }),
-                makeCard('UI component library', {
-                    description: 'Base component system: buttons, badges, inputs, modals.',
-                    priority: 'medium',
-                    tags: ['Frontend', 'Design'],
-                    daysAgo: 8,
-                }),
-            ],
-        },
-    ]
+    const cols = createColumnStructure()
+    const getCol = (id: string) => cols.find(c => c.id === id)
+
+    const backlog = getCol('backlog')
+    if (backlog) backlog.cards = SeederService.generateKanbanCards(5)
+
+    const todo = getCol('todo')
+    if (todo) todo.cards = SeederService.generateKanbanCards(7)
+
+    const inProgress = getCol('in-progress')
+    if (inProgress) inProgress.cards = SeederService.generateKanbanCards(3)
+
+    const review = getCol('review')
+    if (review) review.cards = SeederService.generateKanbanCards(4)
+
+    const done = getCol('done')
+    if (done) done.cards = SeederService.generateKanbanCards(12)
+
+    return cols
 }
 
 // ── Store ─────────────────────────────────────────────────────────────────
@@ -190,6 +79,7 @@ export const useKanbanStore = defineStore('kanbanStore', {
             }
         },
 
+        /** Add a new card to the top of a specific column. */
         addCard(columnId: string, data: Omit<KanbanCard, 'id' | 'createdAt'>) {
             const col = this.columns.find(c => c.id === columnId)
             if (!col) return
@@ -200,20 +90,31 @@ export const useKanbanStore = defineStore('kanbanStore', {
             })
         },
 
+        /** Deploy mock data into the board for demo purposes. */
         deployMockData() {
-            this.columns = createInitialColumns()
+            const mockColumns = createInitialColumns()
+            this.columns.forEach(col => {
+                const mockCol = mockColumns.find(c => c.id === col.id)
+                if (mockCol && mockCol.cards.length > 0) {
+                    col.cards.push(...mockCol.cards)
+                }
+            })
         },
 
+        /** Keep the column structure — only clear the cards. */
         removeMockData() {
-            // Keep the column structure — only clear the cards
             this.columns.forEach(col => { col.cards = [] })
         },
     },
 
     getters: {
-        // Columns always exist — hasData means there are cards, not columns
+        /** Returns true if there are any cards on the board. */
         hasData: (state) => state.columns.some(col => col.cards.length > 0),
+        
+        /** Returns the total number of cards across all columns. */
         totalCards: (state) => state.columns.reduce((sum, col) => sum + col.cards.length, 0),
+        
+        /** Returns the total number of locked cards. */
         lockedCount: (state) => state.columns.reduce(
             (sum, col) => sum + col.cards.filter(c => c.locked).length, 0,
         ),

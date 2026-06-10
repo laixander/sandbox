@@ -18,14 +18,17 @@ export const useSettingsStore = defineStore('settingsStore', {
     }),
 
     actions: {
+        /** Sets the default view mode for lists/grids. */
         setDefaultViewMode(mode: 'list' | 'card') {
             this.defaultViewMode = mode
         },
 
+        /** Toggles or sets the sidebar collapsed state. */
         setSidebarCollapsed(collapsed: boolean) {
             this.sidebarCollapsed = collapsed
         },
 
+        /** Resets all user settings back to their default values. */
         resetToDefaults() {
             this.defaultViewMode = 'list'
             this.sidebarCollapsed = false

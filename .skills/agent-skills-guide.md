@@ -181,7 +181,7 @@ const props = defineProps<{ error: NuxtError }>()
 | `useAppToast()` | Auto-imported. `toast.success(title, desc?)`, `toast.error(title, desc?)`, and `toast.warning(title, desc?)` |
 | `useActivityLog()` | Auto-imported. `const { log } = useActivityLog()` → `log(module, action, description, { meta? })`. Call on every real user action. Do NOT call from seeders. |
 | `useDemoAuth()` | Auto-imported. Returns `{ currentUser, isAuthenticated, role, isAdmin, isStaff, setRole, logout }`. Used in `UserMenu`, `default.vue`, and anywhere role-based UI is needed. |
-| `useNotify()` | Auto-imported. `const { notify } = useNotify()` → `notify(title, body, type?, module?)`. Adds a notification to `notificationStore`. Types: `'info'`, `'success'`, `'warning'`, `'error'`. |
+| `useNotify()` | Auto-imported. `const { notify } = useNotify()` → `notify(templateId, payload, type?, module?)`. Adds a notification to `notificationStore`. Types: `'info'`, `'success'`, `'warning'`, `'error'`. |
 | `useChart()` | Auto-imported. Returns `{ legendLabels, defaultOptions, doughnutOptions, polarAreaOptions, radarOptions }` for `vue-chartjs` components. |
 
 ### CSS Utilities
@@ -246,6 +246,26 @@ The full Tailwind palette is registered in two places — both must stay in sync
 - Chart data is typed as `ChartDataPoint` from `app/types/dashboard.ts`; reuse `StatCardData` for stat cards
 - Empty/reset state uses `value: '—'` (em dash) for stat cards and `{ labels: [], datasets: [] }` for charts
 
+
+### Commenting Standards
+The project adheres to strict commenting conventions based on semantic purpose:
+
+1. **JSDoc (`/** ... */`)**: Must be used strictly for documenting functions, methods, getters, actions, and types so IDEs can parse and display hover tooltips. Do not use standard `//` comments directly above functions.
+2. **Section Dividers (`// ── ... ──`)**: Must be used for visual hierarchy to break large files into distinct readable blocks (e.g. `// ── Actions ─────────────────`).
+3. **Inline Explanations (`// ...`)**: Must be used purely to explain "why" or "how" for a specific line of code or logic block.
+
+**In-Code Usage Comments:**
+All core logic files (Stores, Composables, Utils) must include a standardized header block at line 1.
+```ts
+// ============================================================================
+// [Category]: [Name]
+// ============================================================================
+// Brief 1-2 sentence description.
+//
+// Usage:
+//   // code example
+```
+
 ---
 
 ## Skills in This Project
@@ -291,6 +311,9 @@ Builds the full `app/pages/<entity>.vue` **and** its form modal component `app/c
 - `onColumnDragOver` sets `dragOver.cardId = null` → highlights the column drop zone with `ring-dashed bg-primary/5`
 - `@drop.prevent.stop` on cards prevents the column `@drop` from also firing
 - Inline add-card form per column: toggled by `addingCard` ref (columnId or null); uses `UInput` + `USelect` for priority; `@keyup.enter` confirms, `@keyup.esc` cancels
+- **Seeder Integration**: Uses `SeederService.generateKanbanCards(count)` for realistic mock data rather than hardcoded store factories.
+- **Search & Tag Filters**: Uses `<TableGlobalFilter>` for text search and `<USelectMenu multiple>` for a Tag filter. A `displayColumns` computed property dynamically filters cards based on search input and selected tags.
+- **Column Dropdown Menu**: Includes a `<UDropdownMenu>` inside the card modal header to allow users to move cards between columns without dragging.
 - **Do NOT auto-seed on `onMounted`** — the store starts empty like all other stores; seeding is exclusively via DemoFab. Auto-seeding on mount silently re-populates the board after a system reset.
 - **`UEmpty` in empty columns** — show `<UEmpty variant="naked">` inside the drop zone when `column.cards.length === 0 && addingCard !== column.id`; `class="flex-1 py-4"` keeps the column visible and still droppable
 - `deployMockData()` / `removeMockData()` wired into `DemoFab`

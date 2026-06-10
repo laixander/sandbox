@@ -42,7 +42,8 @@ Scaffold a Pinia store for a given entity, following app-sandbox's options API s
      deployMockData(count: number = 6) {
        this.isLoading = true
        setTimeout(() => {
-         this.<entities> = SeederService.generate<Entity>s(count)
+         const mockData = SeederService.generate<Entity>s(count)
+         this.<entities> = [...this.<entities>, ...mockData]
          this.isLoading = false
        }, 500)
      },
@@ -99,7 +100,8 @@ export const use<Entity>Store = defineStore('<entity>Store', {
     deployMockData(count: number = 6) {
       this.isLoading = true
       setTimeout(() => {
-        this.<entities> = SeederService.generate<Entity>s(count)
+        const mockData = SeederService.generate<Entity>s(count)
+        this.<entities> = [...this.<entities>, ...mockData]
         this.isLoading = false
       }, 500)
     },
@@ -143,6 +145,8 @@ export const use<Entity>Store = defineStore('<entity>Store', {
 - Use the **options API style** (`defineStore(id, { state, actions, getters, persist })`) — not the setup/composition style
 - Store ID must be a camelCase string matching the filename: `'<entity>Store'`
 - Always use `unshift()` for new records — not `push()`
+- **Always append** mock data in `deployMockData` via `[...this.<entities>, ...mockData]` instead of overwriting, so any manually added data is preserved
+- **Use `.forEach` and `.push` for nested arrays** when seeding mock data to preserve Vue's reactivity, rather than mapping and returning completely new objects
 - `isLoading` must be set to `true` **before** `setTimeout` and reset to `false` inside the callback
 - Do NOT use `async/await` — use `setTimeout` to simulate network latency
 - Do NOT destructure `persistedState` — use it as a global (it is auto-imported by the plugin)

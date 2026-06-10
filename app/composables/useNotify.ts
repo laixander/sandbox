@@ -6,22 +6,22 @@
 //
 // Usage:
 //   const { notify } = useNotify()
-//   notify('Title', 'Body')                          // defaults to 'info'
-//   notify('Saved', 'Record updated.', 'success', 'CRUD')
-//   notify('Error', 'Something failed.', 'error')
+//   notify('system_alert', { message: 'Something failed' }, 'error')
+//   notify('user_created', { userName: 'Alice' }, 'success', 'CRUD')
 
 import type { NotificationType } from '~/types/notification'
+import type { NotificationTemplateId } from '~/utils/notificationTemplates'
 
 export const useNotify = () => {
     const store = useNotificationStore()
 
     const notify = (
-        title: string,
-        body: string,
+        templateId: NotificationTemplateId,
+        payload: Record<string, any> = {},
         type: NotificationType = 'info',
         module?: string,
     ) => {
-        store.addNotification(title, body, type, module)
+        store.addNotification(templateId, payload, type, module)
     }
 
     return { notify }

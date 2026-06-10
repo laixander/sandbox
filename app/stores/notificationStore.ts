@@ -6,14 +6,16 @@
 //
 // Usage:
 //   const store = useNotificationStore()
-//   store.addNotification('Title', 'Body', 'success', 'CRUD')
+//   store.addNotification('user_created', { userName: 'Alice' }, 'success', 'CRUD')
 //   store.markAsRead(id)
 //   store.markAllAsRead()
 //   store.deleteNotification(id)
 //   store.unreadCount    // reactive getter used by sidebar badge
 
+import { faker } from '@faker-js/faker'
 import { defineStore } from 'pinia'
 import type { Notification, NotificationType } from '~/types/notification'
+import type { NotificationTemplateId } from '~/utils/notificationTemplates'
 
 export const useNotificationStore = defineStore('notificationStore', {
     state: () => ({
@@ -33,15 +35,15 @@ export const useNotificationStore = defineStore('notificationStore', {
 
     actions: {
         addNotification(
-            title: string,
-            body: string,
+            templateId: NotificationTemplateId,
+            payload: Record<string, any> = {},
             type: NotificationType = 'info',
             module?: string,
         ) {
             this.notifications.unshift({
                 id: crypto.randomUUID(),
-                title,
-                body,
+                templateId,
+                payload,
                 type,
                 isRead: false,
                 createdAt: new Date().toISOString(),
@@ -67,61 +69,61 @@ export const useNotificationStore = defineStore('notificationStore', {
         },
 
         deployMockData() {
-            if (this.notifications.length > 0) return
             const now = Date.now()
+
+            // 1. Start with a standard welcome message
             const mock: Omit<Notification, 'id'>[] = [
                 {
-                    title: 'Welcome to Sandbox',
-                    body: 'Your demo environment is ready. Explore the features.',
+                    templateId: 'welcome',
+                    payload: {},
                     type: 'info',
                     isRead: false,
                     createdAt: new Date(now - 2 * 60 * 1000).toISOString(),
                     module: 'System',
-                },
-                {
-                    title: 'User Record Created',
-                    body: 'A new user was successfully added to the system.',
-                    type: 'success',
-                    isRead: false,
-                    createdAt: new Date(now - 15 * 60 * 1000).toISOString(),
-                    module: 'CRUD',
-                },
-                {
-                    title: 'Storage Limit Approaching',
-                    body: 'Your sandbox data is reaching the demo limit.',
-                    type: 'warning',
-                    isRead: false,
-                    createdAt: new Date(now - 60 * 60 * 1000).toISOString(),
-                    module: 'System',
-                },
-                {
-                    title: 'Activity Log Cleared',
-                    body: 'All activity logs were cleared by an Admin.',
-                    type: 'info',
-                    isRead: true,
-                    createdAt: new Date(now - 3 * 60 * 60 * 1000).toISOString(),
-                    module: 'Activity Logs',
-                },
-                {
-                    title: 'Export Complete',
-                    body: 'User data export has been generated successfully.',
-                    type: 'success',
-                    isRead: true,
-                    createdAt: new Date(now - 6 * 60 * 60 * 1000).toISOString(),
-                    module: 'CRUD',
-                },
-                {
-                    title: 'Failed Login Attempt',
-                    body: 'An unauthorized login attempt was detected and blocked.',
-                    type: 'error',
-                    isRead: true,
-                    createdAt: new Date(now - 24 * 60 * 60 * 1000).toISOString(),
-                    module: 'Auth',
-                },
+                }
             ]
-            mock.forEach(n =>
-                this.notifications.push({ id: crypto.randomUUID(), ...n }),
-            )
+
+            // 2. Define our template pool
+            const templates = [
+                { id: 'user_created', type: 'success', module: 'CRUD' },
+                { id: 'storage_warning', type: 'warning', module: 'System' },
+                { id: 'log_cleared', type: 'info', module: 'Activity Logs' },
+                { id: 'export_complete', type: 'success', module: 'CRUD' },
+                { id: 'failed_login', type: 'error', module: 'Auth' },
+                { id: 'system_alert', type: 'info', module: 'System' }
+            ] as const
+
+            // 3. Generate 15 random notifications
+            for (let i = 0; i < 15; i++) {
+                const t = faker.helpers.arrayElement(templates)
+                let payload: Record<string, any> = {}
+
+                if (t.id === 'user_created') payload = { userName: faker.person.fullName() }
+                if (t.id === 'storage_warning') payload = { usage: faker.number.int({ min: 80, max: 99 }) }
+                if (t.id === 'log_cleared') payload = { adminName: faker.person.fullName() }
+                if (t.id === 'export_complete') payload = { exportType: faker.helpers.arrayElement(['User Data', 'Activity Logs', 'System Config']) }
+                if (t.id === 'failed_login') payload = { email: faker.internet.email() }
+                if (t.id === 'system_alert') payload = { message: faker.hacker.phrase() }
+
+                // Random time within the last 7 days
+                const createdAt = new Date(now - faker.number.int({ min: 10 * 60 * 1000, max: 7 * 24 * 60 * 60 * 1000 })).toISOString()
+
+                mock.push({
+                    templateId: t.id,
+                    payload,
+                    type: t.type,
+                    isRead: faker.datatype.boolean({ probability: 0.6 }), // 60% chance it is already read
+                    createdAt,
+                    module: t.module
+                })
+            }
+
+            // 4. Assign IDs and merge into the store
+            const mockWithIds = mock.map(n => ({ id: crypto.randomUUID(), ...n }))
+            this.notifications.push(...mockWithIds)
+
+            // 5. Sort the entire array descending (newest first)
+            this.notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         },
 
         removeMockData() {

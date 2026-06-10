@@ -2,6 +2,12 @@
 // Composable: useAppToast
 // ============================================================================
 // Provides a unified, type-safe interface for application-wide toast notifications.
+// Auto-imported — no manual import needed.
+//
+// Usage:
+//   const toast = useAppToast()
+//   toast.success('Title', 'Description')
+//   toast.error('Error Title', 'Description')
 
 export const useAppToast = () => {
     const toast = useToast()

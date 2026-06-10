@@ -24,7 +24,7 @@ const allNavItems = computed<NavigationMenuItem[]>(() => [
         icon: 'i-lucide-bell',
         to: '/notifications',
         badge: {
-            // label: notificationStore.unreadCount > 0 ? String(notificationStore.unreadCount) : undefined,
+            label: notificationStore.unreadCount > 0 ? String(notificationStore.unreadCount) : undefined,
             variant: notificationStore.unreadCount > 0 ? 'solid' : 'soft',
             color: notificationStore.unreadCount > 0 ? 'primary' : 'neutral',
             class: 'rounded-full'

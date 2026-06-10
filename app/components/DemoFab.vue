@@ -14,9 +14,7 @@ const kanbanStore = useKanbanStore()
 const toast = useAppToast()
 
 const isLoading = computed(() => store.isLoading || dashboardStore.isLoading)
-const isDataDeployed = computed(() =>
-    store.hasUsers || dashboardStore.hasDashboardData || notificationStore.hasNotifications || kanbanStore.hasData
-)
+const isDataDeployed = computed(() => dashboardStore.hasDashboardData)
 
 // ============================================================================
 // Confirmation Modal

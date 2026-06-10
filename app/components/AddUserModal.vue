@@ -29,6 +29,7 @@ type Schema = z.output<typeof schema>
 // State
 // ============================================================================
 const formRef = useTemplateRef('formRef')
+const isSaving = ref(false)
 
 const state = reactive<Schema & { avatar: string }>({
     name:   '',
@@ -47,6 +48,7 @@ const reset = (initial?: Partial<typeof state>) => {
     state.email  = initial?.email  ?? ''
     state.status = initial?.status ?? 'Active'
     state.avatar = initial?.avatar ?? ''
+    isSaving.value = false
 }
 
 defineExpose({ reset })
@@ -55,6 +57,8 @@ defineExpose({ reset })
 // Handlers
 // ============================================================================
 async function onSubmit(event: FormSubmitEvent<Schema>) {
+    if (isSaving.value) return
+    isSaving.value = true
     emit('save', { ...event.data, avatar: state.avatar })
 }
 </script>
@@ -80,8 +84,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
         <template #footer>
             <div class="flex justify-end gap-2">
-                <UButton variant="ghost" color="neutral" @click="open = false">Dismiss</UButton>
-                <UButton color="primary" @click="formRef?.submit()">
+                <UButton variant="ghost" color="neutral" :disabled="isSaving" @click="open = false">Dismiss</UButton>
+                <UButton color="primary" :loading="isSaving" @click="formRef?.submit()">
                     {{ isEditing ? 'Save Changes' : 'Save Record' }}
                 </UButton>
             </div>

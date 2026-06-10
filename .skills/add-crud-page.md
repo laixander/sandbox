@@ -333,7 +333,7 @@ Create a full CRUD page for a given entity with list/card view toggle, `UEmpty` 
 - **`ConfirmationModal`** is required for all destructive actions (delete) and for edit saves
 - **`useAppToast()`** is auto-imported — use `toast.success()` for creates/updates and `toast.error()` for deletes
 - **`useActivityLog()`** is auto-imported — call `log(module, action, description, { meta })` on every create, update, and delete. Do NOT log seeder/mock-data operations
-- **`useNotify()`** is auto-imported — optionally call `notify(title, body, type, module)` alongside `log()` for important outcomes the **current user** should be alerted to. These are complementary — `log()` writes to the admin audit trail; `notify()` writes to the user's notification feed.
+- **`useNotify()`** is auto-imported — optionally call `notify(templateId, payload, type, module)` alongside `log()` for important outcomes the **current user** should be alerted to. These are complementary — `log()` writes to the admin audit trail; `notify()` writes to the user's notification feed.
 
   | | `useActivityLog()` | `useNotify()` |
   |---|---|---|

@@ -3,7 +3,8 @@ definePageMeta({
     title: 'Notifications',
 })
 
-import type { NotificationType } from '~/types/notification'
+import type { Notification, NotificationType } from '~/types/notification'
+import { notificationTemplates, type NotificationTemplateId } from '~/utils/notificationTemplates'
 
 const store = useNotificationStore()
 const toast = useAppToast()
@@ -14,6 +15,27 @@ const typeConfig: Record<NotificationType, { icon: string; color: string }> = {
     success: { icon: 'i-lucide-circle-check', color: 'success' },
     warning: { icon: 'i-lucide-triangle-alert', color: 'warning' },
     error: { icon: 'i-lucide-circle-x', color: 'error' },
+}
+
+const getTemplate = (id: NotificationTemplateId) => notificationTemplates[id] || notificationTemplates['system_alert']
+const getIcon = (n: Notification) => getTemplate(n.templateId).icon || typeConfig[n.type].icon
+const getColor = (n: Notification) => getTemplate(n.templateId).color || typeConfig[n.type].color
+
+// ── Safe Markdown Parser ──────────────────────────────────────────────────
+const escapeHtml = (unsafe: string) => {
+    return unsafe
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+}
+
+const renderDescriptionHtml = (templateId: NotificationTemplateId, payload: Record<string, any>) => {
+    const rawString = getTemplate(templateId).renderDescription(payload)
+    const safeString = escapeHtml(rawString)
+    // Replace **text** with strong tag
+    return safeString.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-foreground">$1</strong>')
 }
 
 // ── Filter state ──────────────────────────────────────────────────────────
@@ -73,19 +95,22 @@ onMounted(() => {
 
     <!-- Notification feed -->
     <div v-if="filteredNotifications.length > 0" class="w-full max-w-2xl mx-auto mt-4 sm:mt-8 space-y-2">
-        <UAlert v-for="notification in filteredNotifications" :key="notification.id" :title="notification.title"
-            :description="notification.body" color="neutral" variant="outline"
+        <UAlert v-for="notification in filteredNotifications" :key="notification.id" :title="getTemplate(notification.templateId).title"
+            color="neutral" variant="outline"
             class="group relative cursor-pointer transition-all hover:border-primary/30"
             :class="!notification.isRead && 'ring-1 ring-primary/20 bg-primary/[0.02]'" :ui="{
                 title: notification.isRead ? 'font-medium text-default' : 'font-semibold text-highlighted',
-                description: 'line-clamp-2'
             }" @click="store.markAsRead(notification.id)" close>
+            
+            <template #description>
+                <span v-html="renderDescriptionHtml(notification.templateId, notification.payload)" class="line-clamp-2" />
+            </template>
             <template #leading>
                 <UChip v-if="!notification.isRead" standalone inset class="absolute bottom-6 right-6 animate-pulse" />
                 <div class="shrink-0 size-9 rounded-lg flex items-center justify-center"
-                    :class="`bg-${typeConfig[notification.type].color}/10`">
-                    <UIcon :name="typeConfig[notification.type].icon" class="size-4.5"
-                        :class="`text-${typeConfig[notification.type].color}`" />
+                    :class="`bg-${getColor(notification)}/10`">
+                    <UIcon :name="getIcon(notification)" class="size-4.5"
+                        :class="`text-${getColor(notification)}`" />
                 </div>
             </template>
 

@@ -47,11 +47,11 @@ export default defineNuxtConfig({
       colors: [
         'primary',
         'secondary',
-        'tertiary',
         'info',
         'success',
         'warning',
         'error',
+        'neutral',
         // Full Tailwind palette
         'red',
         'orange',

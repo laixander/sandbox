@@ -90,8 +90,8 @@ const handleSubmit = async () => {
     }
 
     store.create<Entity>(entity)
-    log('<Module>', 'created', `Created ${entity.<nameField>} via wizard`)
-    notify('<Entity> Created', `${entity.<nameField>} has been added.`, 'success', '<Module>')
+    log('<Module>', 'created', `Created <entity> ${entity.<nameField>} via wizard`)
+    notify('<entity>_created', { <nameField>: entity.<nameField> }, 'success', '<Module>')
     toast.success('<Entity> Created', `${entity.<nameField>} was added successfully.`)
 
     createdEntity.value = entity

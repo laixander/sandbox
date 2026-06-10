@@ -73,6 +73,7 @@ Create an `Add<Entity>Modal.vue` component with Zod schema validation, a public 
 
    ```ts
    const formRef = useTemplateRef('formRef')
+   const isSaving = ref(false)
 
    // State must cover all schema fields PLUS any extra pre-seeded fields (e.g. avatar)
    const state = reactive<Schema & { avatar: string }>({
@@ -93,6 +94,7 @@ Create an `Add<Entity>Modal.vue` component with Zod schema validation, a public 
        state.email  = initial?.email  ?? ''
        state.role   = initial?.role   ?? ''
        state.avatar = initial?.avatar ?? ''
+       isSaving.value = false
    }
 
    defineExpose({ reset })
@@ -104,6 +106,8 @@ Create an `Add<Entity>Modal.vue` component with Zod schema validation, a public 
 
    ```ts
    async function onSubmit(event: FormSubmitEvent<Schema>) {
+       if (isSaving.value) return
+       isSaving.value = true
        // Merge schema-validated fields with any non-validated extra fields (e.g. avatar)
        emit('save', { ...event.data, avatar: state.avatar })
    }
@@ -129,9 +133,9 @@ Create an `Add<Entity>Modal.vue` component with Zod schema validation, a public 
            <template #footer>
                <div class="flex justify-end gap-2">
                    <!-- Sets open = false directly — no emit needed for cancel -->
-                   <UButton variant="ghost" color="neutral" @click="open = false">Dismiss</UButton>
+                   <UButton variant="ghost" color="neutral" :disabled="isSaving" @click="open = false">Dismiss</UButton>
                    <!-- Triggers UForm validation programmatically from outside the <form> DOM -->
-                   <UButton color="primary" @click="formRef?.submit()">
+                   <UButton color="primary" :loading="isSaving" @click="formRef?.submit()">
                        {{ isEditing ? 'Save Changes' : 'Save Record' }}
                    </UButton>
                </div>
@@ -167,6 +171,7 @@ type Schema = z.output<typeof schema>
 
 // ── State ────────────────────────────────────────────────────────────────────
 const formRef = useTemplateRef('formRef')
+const isSaving = ref(false)
 
 const state = reactive<Schema & { avatar: string }>({
     name:   '',
@@ -181,12 +186,15 @@ const reset = (initial?: Partial<typeof state>) => {
     state.role   = initial?.role   ?? ''
     state.email  = initial?.email  ?? ''
     state.avatar = initial?.avatar ?? ''
+    isSaving.value = false
 }
 
 defineExpose({ reset })
 
 // ── Handlers ─────────────────────────────────────────────────────────────────
 async function onSubmit(event: FormSubmitEvent<Schema>) {
+    if (isSaving.value) return
+    isSaving.value = true
     emit('save', { ...event.data, avatar: state.avatar })
 }
 </script>
@@ -209,8 +217,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
         <template #footer>
             <div class="flex justify-end gap-2">
-                <UButton variant="ghost" color="neutral" @click="open = false">Dismiss</UButton>
-                <UButton color="primary" @click="formRef?.submit()">
+                <UButton variant="ghost" color="neutral" :disabled="isSaving" @click="open = false">Dismiss</UButton>
+                <UButton color="primary" :loading="isSaving" @click="formRef?.submit()">
                     {{ isEditing ? 'Save Changes' : 'Save Record' }}
                 </UButton>
             </div>
