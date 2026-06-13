@@ -20,9 +20,9 @@ The most effective way to build features is to step through the skills sequentia
 First, define the core data structures and ensure the mock data generator understands the shape.
 
 **Your Prompt:**
-> *"Use `.skills/add-type.md` and `.skills/add-seeder-entity.md` to create a `Product` entity. It should have an id, title, price, SKU, and a category enum ('Electronics', 'Clothing', 'Home')."*
+> *"Use `.skills/add-type.md` and `.skills/add-mock-api-endpoint.md` to create a `Product` entity. It should have an id, title, price, SKU, and a category enum ('Electronics', 'Clothing', 'Home')."*
 
-**Your Job:** Review the generated `app/types/product.ts` and `app/utils/seeder.ts` to ensure the properties and Faker mock logic match your expectations.
+**Your Job:** Review the generated `app/types/product.ts` and `server/api/products.ts` to ensure the properties and mock data values match your expectations.
 
 ### Step 2: Business Logic & State
 Once the data shape is perfect, generate the Pinia store. Because the agent just wrote the Type, it knows exactly what to scaffold.

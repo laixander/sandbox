@@ -9,7 +9,7 @@ Create a full CRUD page for a given entity with list/card view toggle, `UEmpty` 
 
 ## Prerequisites
 - Entity type exists in `app/types/<entity>.ts`
-- `app/utils/seeder.ts` has `generateSingle<Entity>()`, `generate<Entity>s()`, and `clear<Entity>s()`
+- A mock API endpoint exists at `server/api/<entity>s.ts`
 - Pinia store exists at `app/stores/<entity>Store.ts` with `deployMockData`, `removeMockData`, `create<Entity>`, `update<Entity>`, `delete<Entity>`, `isLoading`, `has<Entity>s`, `<entity>Count`
 - `app/layouts/default.vue` is in place (provides `USidebar`, `#header-actions-teleport` div, `.scrollbar` scroller)
 - An `Add<Entity>Modal` component exists at `app/components/Add<Entity>Modal.vue` with a `reset()` expose and `@save` emit — **use `.skills/add-form-modal.md` to create it first if it doesn't exist**
@@ -32,7 +32,6 @@ Create a full CRUD page for a given entity with list/card view toggle, `UEmpty` 
    import { ref, h, computed } from 'vue'
    import { UAvatar, UBadge, UIcon, UButton, UDropdownMenu } from '#components'
    import { use<Entity>Store } from '~/stores/<entity>Store'
-   import { SeederService } from '~/utils/seeder'
    import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
    ```
 
@@ -62,7 +61,7 @@ Create a full CRUD page for a given entity with list/card view toggle, `UEmpty` 
        isEditing.value = false
        current<Entity>Id.value = null
        // reset() is exposed by the Add<Entity>Modal component
-       modalRef.value?.reset({ <imageField>: SeederService.generateSingle<Entity>().<imageField> })
+       modalRef.value?.reset({ <imageField>: \`https://api.dicebear.com/10.x/thumbs/svg?seed=\${crypto.randomUUID()}\` })
        isOpen.value = true
    }
 
@@ -116,7 +115,7 @@ Create a full CRUD page for a given entity with list/card view toggle, `UEmpty` 
 
    const confirmDelete = () => {
        if (pendingDeleteId.value) {
-           const item = store.<entities>.find(e => e.id === pendingDeleteId.value)
+           const item = store.<entities>.find((e: <Entity>) => e.id === pendingDeleteId.value)
            store.delete<Entity>(pendingDeleteId.value)
            log('<Entity>s', 'deleted', `Deleted <entity> "${item?.<nameField> ?? 'Unknown'}"`, { meta: { id: pendingDeleteId.value } })
            toast.error('<Entity> Deleted', 'The record has been permanently removed.')
@@ -137,7 +136,7 @@ Create a full CRUD page for a given entity with list/card view toggle, `UEmpty` 
          header: '',
          meta: { class: { td: 'text-right' } },
          cell: ({ row }) => {
-             const items: DropdownMenuItem[][] = [
+             const items = [
                  [{ label: 'Edit', icon: 'i-lucide-pencil', onSelect: () => openEditModal(row.original) }],
                  [{ label: 'Delete', icon: 'i-lucide-trash', color: 'error', onSelect: () => promptDelete(row.original.id) }]
              ]
@@ -161,7 +160,7 @@ Create a full CRUD page for a given entity with list/card view toggle, `UEmpty` 
     const filtered<Entity>s = computed(() => {
         if (!globalFilter.value) return store.<entities>
         const search = globalFilter.value.toLowerCase()
-        return store.<entities>.filter(item =>
+        return store.<entities>.filter((item: <Entity>) =>
             item.<nameField>.toLowerCase().includes(search) ||
             item.<emailField>.toLowerCase().includes(search) ||
             item.id.toLowerCase().includes(search)
@@ -332,7 +331,7 @@ Create a full CRUD page for a given entity with list/card view toggle, `UEmpty` 
 - **`UDropdownMenu`** is the only allowed row action pattern — never use inline Edit/Delete buttons
 - **`ConfirmationModal`** is required for all destructive actions (delete) and for edit saves
 - **`useAppToast()`** is auto-imported — use `toast.success()` for creates/updates and `toast.error()` for deletes
-- **`useActivityLog()`** is auto-imported — call `log(module, action, description, { meta })` on every create, update, and delete. Do NOT log seeder/mock-data operations
+- **`useActivityLog()`** is auto-imported — call `log(module, action, description, { meta })` on every create, update, and delete. Do NOT log mock-data operations
 - **`useNotify()`** is auto-imported — optionally call `notify(templateId, payload, type, module)` alongside `log()` for important outcomes the **current user** should be alerted to. These are complementary — `log()` writes to the admin audit trail; `notify()` writes to the user's notification feed.
 
   | | `useActivityLog()` | `useNotify()` |
@@ -355,7 +354,8 @@ Create a full CRUD page for a given entity with list/card view toggle, `UEmpty` 
 - Do NOT use `v-model` on UModal — always use `v-model:open`
 - The form modal (`Add<Entity>Modal`) handles its own Zod validation and only emits `@save` with clean, validated data — the page never reads raw form refs directly — always use `v-model:open`
 - **Extract the form modal** into `app/components/Add<Entity>Modal.vue` — never inline `<UModal>` with a form directly in the page
-- **`formRef?.submit()`** — the standard way to trigger form validation from a button in a `#footer` slot that is outside the `<UForm>` DOM tree
+- **formRef?.submit()** — the standard way to trigger form validation from a button in a `#footer` slot that is outside the `<UForm>` DOM tree
+- **Relationship Mappings** — for many-to-many relationships (e.g. UserRoles), do NOT create a separate CRUD page for the join table. Instead, add an action (e.g., "Manage Roles") to the primary entity's dropdown menu that opens a dedicated modal (`Manage<Relationship>Modal`) to handle the mapping.
 
 ## Output / Deliverables
 - `app/pages/<entity>.vue` — full CRUD page

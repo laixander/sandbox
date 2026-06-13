@@ -156,25 +156,25 @@ const selectedTags = ref<string[]>([])
 
 const availableTags = computed(() => {
     const tags = new Set<string>()
-    store.columns.forEach(col => {
-        col.cards.forEach(card => card.tags?.forEach(t => tags.add(t)))
+    store.columns.forEach((col: KanbanColumn) => {
+        col.cards.forEach((card: KanbanCard) => card.tags?.forEach((t: string) => tags.add(t)))
     })
     return Array.from(tags).sort()
 })
 
 const displayColumns = computed(() => {
-    return store.columns.map(c => {
-        const filteredCards = c.cards.filter(card => {
+    return store.columns.map((c: KanbanColumn) => {
+        const filteredCards = c.cards.filter((card: KanbanCard) => {
             let matchSearch = true
             if (searchQuery.value) {
                 const query = searchQuery.value.toLowerCase()
                 matchSearch = card.title.toLowerCase().includes(query) || 
                        card.description?.toLowerCase().includes(query) ||
-                       (card.tags?.some(t => t.toLowerCase().includes(query)) ?? false)
+                       (card.tags?.some((t: string) => t.toLowerCase().includes(query)) ?? false)
             }
             let matchTags = true
             if (selectedTags.value.length > 0) {
-                matchTags = selectedTags.value.some(tag => card.tags?.includes(tag))
+                matchTags = selectedTags.value.some((tag: string) => card.tags?.includes(tag))
             }
             return matchSearch && matchTags
         })
@@ -201,11 +201,13 @@ const onCardDragStart = (e: DragEvent, cardId: string, columnId: string, locked:
 
 const onCardDragOver = (cardId: string, columnId: string) => {
     if (!dragging.value) return
+    if (dragOver.value?.cardId === cardId && dragOver.value?.columnId === columnId) return
     dragOver.value = { columnId, cardId }
 }
 
 const onColumnDragOver = (columnId: string) => {
     if (!dragging.value) return
+    if (dragOver.value?.columnId === columnId && dragOver.value?.cardId === null) return
     dragOver.value = { columnId, cardId: null }
 }
 
@@ -228,7 +230,7 @@ const newCardPriority = ref<KanbanPriority>('medium')
 // IMPORTANT: Do NOT use useTemplateRef for the input inside a v-for.
 // Vue collects refs inside v-for into arrays, causing type errors.
 // Use a watch + querySelector instead:
-watch(addingCard, async (val) => {
+watch(addingCard, async (val: string | null) => {
     if (!val) return
     await nextTick()
     document.querySelector<HTMLInputElement>('.kanban-add-card-input input')?.focus()
@@ -386,10 +388,12 @@ kanbanStore.removeMockData()
 - **`@dragover.prevent.stop` and `@drop.prevent.stop` on cards** — `.stop` prevents the event from bubbling to the column `@dragover` and `@drop`, so highlighting works cleanly and drops fire only once
 - **Never use `useTemplateRef` for elements inside `v-for`** — Vue collects them into an array; use `watch` + `querySelector` with a marker class instead
 - **`type BadgeColor = ...`** — always type explicit color union configs; TypeScript widens object literals to `string`, which fails component prop types
+- **`dragOver` Performance** — The `@dragover` event fires continuously (dozens of times per second). You **MUST** add an early return if the target is unchanged (`if (dragOver.value?.cardId === cardId && ...) return`) before updating the ref. Otherwise, mutating the reactive ref continuously triggers a huge virtual DOM diff that stutters the browser.
 - **Do NOT auto-seed on `onMounted`** — the store starts empty like all other stores; seeding is exclusively via DemoFab
 - **`UEmpty` in empty columns** — `<UEmpty variant="naked" class="flex-1 py-4">` inside the drop zone when `column.cards.length === 0 && addingCard !== column.id`; keeps the column visible and still droppable
 - **`splice` guard** — `const [card] = arr.splice(idx, 1); if (!card) return` is required; TypeScript types `splice` as returning `T[]` so the destructured element is `T | undefined`
 - **`crypto.randomUUID()`** — standard for generating IDs
+- **Explicit Types in Callbacks** — Vue's reactive boundaries (computed, watchers, templates) often drop type inference when looping through complex objects like `store.columns`. Always explicitly type parameters (e.g. `.map((c: KanbanColumn) => ...)` and `watch(..., (val: string | null) => ...)`) to avoid `implicit any` errors.
 
 ---
 

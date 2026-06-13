@@ -15,6 +15,8 @@ export const useSettingsStore = defineStore('settingsStore', {
     state: () => ({
         defaultViewMode: 'list' as 'list' | 'card',
         sidebarCollapsed: false,
+        themePrimary: 'teal',
+        themeNeutral: 'taupe',
     }),
 
     actions: {
@@ -28,10 +30,20 @@ export const useSettingsStore = defineStore('settingsStore', {
             this.sidebarCollapsed = collapsed
         },
 
+        setThemePrimary(color: string) {
+            this.themePrimary = color
+        },
+
+        setThemeNeutral(color: string) {
+            this.themeNeutral = color
+        },
+
         /** Resets all user settings back to their default values. */
         resetToDefaults() {
             this.defaultViewMode = 'list'
             this.sidebarCollapsed = false
+            this.themePrimary = 'teal'
+            this.themeNeutral = 'taupe'
         },
     },
 

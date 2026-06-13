@@ -18,6 +18,7 @@ const allNavItems = computed<NavigationMenuItem[]>(() => [
     { type: 'label', label: 'Menu' },
     { label: 'Dashboard', icon: 'i-lucide-chart-pie', to: '/', meta: { adminOnly: true } },
     { label: 'CRUD', icon: 'i-lucide-folder-open', to: '/crud' },
+    { label: 'Roles', icon: 'i-lucide-shield', to: '/roles' },
     { label: 'Activity Logs', icon: 'i-lucide-activity', to: '/activity-logs' },
     {
         label: 'Notifications',
@@ -33,12 +34,12 @@ const allNavItems = computed<NavigationMenuItem[]>(() => [
     },
     { label: 'Kanban', icon: 'i-lucide-kanban', to: '/kanban' },
     { label: 'Wizard', icon: 'i-lucide-wand-sparkles', to: '/wizard', meta: { adminOnly: true } },
-    { label: 'Settings', icon: 'i-lucide-settings', to: '/settings' },
+    // { label: 'Settings', icon: 'i-lucide-settings', to: '/settings' },
 ])
 
 const items = computed<NavigationMenuItem[][]>(() => [
     [
-        ...allNavItems.value.filter(item => !(item as any).meta?.adminOnly || isAdmin.value)
+        ...allNavItems.value.filter((item: NavigationMenuItem) => !(item as any).meta?.adminOnly || isAdmin.value)
     ]
 ])
 

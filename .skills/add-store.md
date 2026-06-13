@@ -9,17 +9,17 @@ Scaffold a Pinia store for a given entity, following app-sandbox's options API s
 
 ## Prerequisites
 - The entity interface must exist in `app/types/<entity>.ts`
-- `app/utils/seeder.ts` must have generator methods for the entity (`generateSingle<Entity>`, `generate<Entity>s`, `clear<Entity>s`)
+- A Nuxt Server API route must exist at `server/api/<entity>s.ts` returning mock data
 - `@pinia-plugin-persistedstate/nuxt` is configured in `nuxt.config.ts`
 
 ## Steps
 
 1. **Create** `app/stores/<entity>Store.ts`
 
-2. **Import** the store factory and the entity type + seeder:
+2. **Import** the store factory and the entity type:
    ```ts
    import { defineStore } from 'pinia'
-   import { SeederService, type <Entity> } from '~/utils/seeder'
+   import type { <Entity> } from '~/types/<entity>'
    ```
 
 3. **Define state** with the entity array and a loading flag:
@@ -30,41 +30,40 @@ Scaffold a Pinia store for a given entity, following app-sandbox's options API s
    }),
    ```
 
-4. **Define actions** — all async-simulated with `setTimeout`:
-   - `deployMockData(count: number = 6)` — seeds via `SeederService.generate<Entity>s(count)`, delay 500ms
-   - `removeMockData()` — clears via `SeederService.clear<Entity>s()`, delay 300ms
+4. **Define actions**:
+   - `deployMockData()` — `async` function that fetches data from `await $fetch('/api/<entity>s')`
+   - `removeMockData()` — instantly clears the array (e.g. `this.<entities> = []`)
    - `create<Entity>(item: <Entity>)` — `unshift()` to prepend (no delay)
    - `update<Entity>(id: string, updatedData: Partial<<Entity>>)` — find by id, spread update (no delay)
    - `delete<Entity>(id: string)` — filter out by id (no delay)
 
    ```ts
    actions: {
-     deployMockData(count: number = 6) {
+     async deployMockData() {
        this.isLoading = true
-       setTimeout(() => {
-         const mockData = SeederService.generate<Entity>s(count)
+       try {
+         const mockData = await $fetch<<Entity>[]>('/api/<entity>s')
          this.<entities> = [...this.<entities>, ...mockData]
+       } finally {
          this.isLoading = false
-       }, 500)
+       }
      },
      removeMockData() {
        this.isLoading = true
-       setTimeout(() => {
-         this.<entities> = SeederService.clear<Entity>s()
-         this.isLoading = false
-       }, 300)
+       this.<entities> = []
+       this.isLoading = false
      },
      create<Entity>(item: <Entity>) {
        this.<entities>.unshift(item)
      },
      update<Entity>(id: string, updatedData: Partial<<Entity>>) {
-       const index = this.<entities>.findIndex(e => e.id === id)
+       const index = this.<entities>.findIndex((e: <Entity>) => e.id === id)
        if (index !== -1) {
          this.<entities>[index] = { ...this.<entities>[index], ...updatedData } as <Entity>
        }
      },
      delete<Entity>(id: string) {
-       this.<entities> = this.<entities>.filter(e => e.id !== id)
+       this.<entities> = this.<entities>.filter((e: <Entity>) => e.id !== id)
      }
    },
    ```
@@ -88,7 +87,7 @@ Scaffold a Pinia store for a given entity, following app-sandbox's options API s
 
 ```ts
 import { defineStore } from 'pinia'
-import { SeederService, type <Entity> } from '~/utils/seeder'
+import type { <Entity> } from '~/types/<entity>'
 
 export const use<Entity>Store = defineStore('<entity>Store', {
   state: () => ({
@@ -97,21 +96,20 @@ export const use<Entity>Store = defineStore('<entity>Store', {
   }),
 
   actions: {
-    deployMockData(count: number = 6) {
+    async deployMockData() {
       this.isLoading = true
-      setTimeout(() => {
-        const mockData = SeederService.generate<Entity>s(count)
+      try {
+        const mockData = await $fetch<<Entity>[]>('/api/<entity>s')
         this.<entities> = [...this.<entities>, ...mockData]
+      } finally {
         this.isLoading = false
-      }, 500)
+      }
     },
 
     removeMockData() {
       this.isLoading = true
-      setTimeout(() => {
-        this.<entities> = SeederService.clear<Entity>s()
-        this.isLoading = false
-      }, 300)
+      this.<entities> = []
+      this.isLoading = false
     },
 
     create<Entity>(item: <Entity>) {
@@ -119,14 +117,14 @@ export const use<Entity>Store = defineStore('<entity>Store', {
     },
 
     update<Entity>(id: string, updatedData: Partial<<Entity>>) {
-      const index = this.<entities>.findIndex(e => e.id === id)
+      const index = this.<entities>.findIndex((e: <Entity>) => e.id === id)
       if (index !== -1) {
         this.<entities>[index] = { ...this.<entities>[index], ...updatedData } as <Entity>
       }
     },
 
     delete<Entity>(id: string) {
-      this.<entities> = this.<entities>.filter(e => e.id !== id)
+      this.<entities> = this.<entities>.filter((e: <Entity>) => e.id !== id)
     }
   },
 
@@ -146,11 +144,8 @@ export const use<Entity>Store = defineStore('<entity>Store', {
 - Store ID must be a camelCase string matching the filename: `'<entity>Store'`
 - Always use `unshift()` for new records — not `push()`
 - **Always append** mock data in `deployMockData` via `[...this.<entities>, ...mockData]` instead of overwriting, so any manually added data is preserved
-- **Use `.forEach` and `.push` for nested arrays** when seeding mock data to preserve Vue's reactivity, rather than mapping and returning completely new objects
-- `isLoading` must be set to `true` **before** `setTimeout` and reset to `false` inside the callback
-- Do NOT use `async/await` — use `setTimeout` to simulate network latency
-- Do NOT destructure `persistedState` — use it as a global (it is auto-imported by the plugin)
-- The entity type must be imported from `~/utils/seeder`, not directly from `~/types/<entity>`
+- `deployMockData` MUST be `async` and use `$fetch` to hit the mock API endpoint, simulating real network boundaries.
+- The entity type must be imported from `~/types/<entity>`
 
 ## Output / Deliverables
 - `app/stores/<entity>Store.ts` — fully functional Pinia store

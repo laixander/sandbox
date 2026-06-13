@@ -2,7 +2,7 @@
 // Store: userStore
 // ============================================================================
 // Manages the state for the Users CRUD module including fetching and mutating records.
-// Data is seeded via SeederService and persisted to localStorage.
+// Data is fetched from mock Nuxt Server API and persisted to localStorage.
 //
 // Usage:
 //   const store = useUserStore()
@@ -10,7 +10,7 @@
 //   store.deleteUser(id)
 
 import { defineStore } from 'pinia'
-import { SeederService, type User } from '~/utils/seeder'
+import type { User } from '~/types/user'
 
 export const useUserStore = defineStore('userStore', {
     state: () => ({
@@ -20,22 +20,21 @@ export const useUserStore = defineStore('userStore', {
 
     actions: {
         /** Deploy mock user data into the store. */
-        deployMockData(count: number = 6) {
+        async deployMockData() {
             this.isLoading = true
-            setTimeout(() => {
-                const mockUsers = SeederService.generateUsers(count)
-                this.users = [...this.users, ...mockUsers]
+            try {
+                const data = await $fetch<User[]>('/api/users')
+                this.users = [...this.users, ...data]
+            } finally {
                 this.isLoading = false
-            }, 500)
+            }
         },
 
         /** Clear all mock user data from the store. */
         removeMockData() {
             this.isLoading = true
-            setTimeout(() => {
-                this.users = SeederService.clearUsers()
-                this.isLoading = false
-            }, 300)
+            this.users = []
+            this.isLoading = false
         },
 
         // ── CRUD Actions ──────────────────────────────────────────────────
@@ -47,7 +46,7 @@ export const useUserStore = defineStore('userStore', {
 
         /** Update an existing user by ID with partial data. */
         updateUser(id: string, updatedData: Partial<User>) {
-            const index = this.users.findIndex(u => u.id === id)
+            const index = this.users.findIndex((u: User) => u.id === id)
             if (index !== -1) {
                 this.users[index] = { ...this.users[index], ...updatedData } as User
             }
@@ -55,7 +54,7 @@ export const useUserStore = defineStore('userStore', {
 
         /** Delete a user by ID. */
         deleteUser(id: string) {
-            this.users = this.users.filter(u => u.id !== id)
+            this.users = this.users.filter((u: User) => u.id !== id)
         }
     },
 

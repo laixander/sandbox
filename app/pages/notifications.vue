@@ -43,7 +43,7 @@ const activeFilter = ref<'all' | 'unread'>('all')
 
 const filteredNotifications = computed(() =>
     activeFilter.value === 'unread'
-        ? store.notifications.filter(n => !n.isRead)
+        ? store.notifications.filter((n: Notification) => !n.isRead)
         : store.notifications,
 )
 

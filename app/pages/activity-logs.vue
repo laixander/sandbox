@@ -10,7 +10,6 @@ definePageMeta({
     isTable: true,
 })
 
-import { ref, computed, h } from 'vue'
 import { UBadge, UTooltip } from '#components'
 import type { TableColumn } from '@nuxt/ui'
 import type { ActivityLog, ActivityLogAction } from '~/types/activityLog'
@@ -39,16 +38,16 @@ const filteredLogs = computed(() => {
     let result = store.logs
 
     if (selectedModule.value !== 'All') {
-        result = result.filter(l => l.module === selectedModule.value)
+        result = result.filter((l: ActivityLog) => l.module === selectedModule.value)
     }
 
     if (selectedAction.value !== 'All') {
-        result = result.filter(l => l.action === selectedAction.value)
+        result = result.filter((l: ActivityLog) => l.action === selectedAction.value)
     }
 
     if (globalFilter.value.trim()) {
         const q = globalFilter.value.toLowerCase()
-        result = result.filter(l =>
+        result = result.filter((l: ActivityLog) =>
             l.module.toLowerCase().includes(q) ||
             l.action.toLowerCase().includes(q) ||
             l.description.toLowerCase().includes(q) ||

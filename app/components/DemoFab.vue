@@ -30,10 +30,12 @@ const isResetConfirmOpen = ref(false)
  */
 const handleSeed = async () => {
     try {
-        store.deployMockData(9)
-        dashboardStore.deployMockData()
-        notificationStore.deployMockData()
-        kanbanStore.deployMockData()
+        await Promise.all([
+            store.deployMockData(),
+            dashboardStore.deployMockData(),
+            notificationStore.deployMockData(),
+            kanbanStore.deployMockData()
+        ])
         toast.success('Data Deployed', 'Demo data has been seeded into the system.')
     } catch {
         toast.error('Seed Failed', 'Could not deploy demo data.')

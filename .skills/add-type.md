@@ -1,7 +1,7 @@
 # Skill: Add an Entity Type
 
 ## Purpose
-Create a TypeScript interface for a new entity in `app/types/` and re-export it through `app/utils/seeder.ts` so stores can import type and seeder from a single source.
+Create a TypeScript interface for a new entity in `app/types/`.
 
 ## When to Use
 - Introducing a brand new data model to the app
@@ -10,7 +10,7 @@ Create a TypeScript interface for a new entity in `app/types/` and re-export it 
 ## Prerequisites
 - You know the field names and their types for the new entity
 - `app/types/` directory exists
-- `app/utils/seeder.ts` exists
+- An entity concept (e.g. User, Product) has been identified
 
 ## Steps
 
@@ -26,7 +26,7 @@ Create a TypeScript interface for a new entity in `app/types/` and re-export it 
 
    | Kind of data            | TypeScript type  | Notes                                      |
    |-------------------------|------------------|--------------------------------------------|
-   | Identifier              | `string`         | Always `string`, generated with `faker.string.uuid()` |
+   | Identifier              | `string`         | Always `string`, e.g. UUIDs |
    | Text / label / name     | `string`         |                                            |
    | Number / price / count  | `number`         |                                            |
    | Date                    | `string`         | Store as ISO date string `'YYYY-MM-DD'`    |
@@ -34,15 +34,6 @@ Create a TypeScript interface for a new entity in `app/types/` and re-export it 
    | Enum / status           | Union type       | e.g., `'active' \| 'inactive' \| 'pending'` |
    | Optional field          | `field?: Type`   | Use `?` for truly optional fields          |
 
-3. **Export the type from `app/utils/seeder.ts`** so stores can import in one place:
-   ```ts
-   // At the top of seeder.ts, alongside other type re-exports:
-   export type { <Entity> } from '../types/<entity>'
-   ```
-   Also add the import inside seeder.ts if you need to use it in a generator:
-   ```ts
-   import type { <Entity> } from '../types/<entity>'
-   ```
 
 ## Conventions
 - Every entity **must** have `id: string` as its first field
@@ -53,8 +44,7 @@ Create a TypeScript interface for a new entity in `app/types/` and re-export it 
 - Filename must be lowercase and match the entity name: `product.ts` for `Product`
 
 ## Output / Deliverables
-- `app/types/<entity>.ts` — new TypeScript interface file
-- `app/utils/seeder.ts` — updated with `export type { <Entity> }` re-export
+- `app/types/<entity>.ts` — well-typed interface exported by name
 
 ## Verification
 - `pnpm typecheck` passes with no errors

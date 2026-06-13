@@ -4,14 +4,15 @@ definePageMeta({
     isTable: true,
 })
 
-import { ref, h, computed } from 'vue'
 import { UAvatar, UBadge, UIcon, UButton, UDropdownMenu } from '#components'
 import { StatusBadge } from '#components'
 import { useUserStore } from '~/stores/userStore'
-import { SeederService } from '~/utils/seeder'
-import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
-
+import { useRoleStore } from '~/stores/roleStore'
+import { useUserRoleStore } from '~/stores/userRoleStore'
+import type { TableColumn } from '@nuxt/ui'
 const store = useUserStore()
+const roleStore = useRoleStore()
+const userRoleStore = useUserRoleStore()
 const toast = useAppToast()
 const { log } = useActivityLog()
 const settings = useSettingsStore()
@@ -25,10 +26,37 @@ const currentUserId = ref<string | null>(null)
 const pendingSaveData = ref<{ name: string; role: string; email: string; avatar: string; status: 'Active' | 'Inactive' } | null>(null)
 const modalRef = useTemplateRef('modalRef')
 
+// ── Roles Modal state ──────────────────────────────────────────────────────
+const isManageRolesOpen = ref(false)
+const manageRolesUserId = ref<string | null>(null)
+const manageRolesModalRef = useTemplateRef('manageRolesModalRef')
+
+const openManageRolesModal = (user: User) => {
+    manageRolesUserId.value = user.id
+    const currentRoles = userRoleStore.rolesForUser(user.id)
+    manageRolesModalRef.value?.reset(currentRoles)
+    isManageRolesOpen.value = true
+}
+
+const handleManageRolesSave = (roleIds: string[]) => {
+    if (manageRolesUserId.value) {
+        userRoleStore.setRolesForUser(manageRolesUserId.value, roleIds)
+        const user = store.users.find((u: User) => u.id === manageRolesUserId.value)
+        log('Users', 'updated', `Updated roles for user "${user?.name ?? 'Unknown'}"`, { meta: { id: manageRolesUserId.value } })
+        toast.success('Roles Updated', `Roles for ${user?.name} have been saved.`)
+    }
+    isManageRolesOpen.value = false
+}
+
+const getRoleNames = (userId: string) => {
+    const roleIds = userRoleStore.rolesForUser(userId)
+    return roleIds.map((id: string) => roleStore.roles.find((r: any) => r.id === id)?.name || 'Unknown Role')
+}
+
 const openCreateModal = () => {
     isEditing.value = false
     currentUserId.value = null
-    modalRef.value?.reset({ avatar: SeederService.generateSingleUser().avatar })
+    modalRef.value?.reset({ avatar: `https://api.dicebear.com/10.x/thumbs/svg?seed=${crypto.randomUUID()}` })
     isOpen.value = true
 }
 
@@ -82,7 +110,7 @@ const promptDelete = (userId: string) => {
 
 const confirmDelete = () => {
     if (pendingDeleteId.value) {
-        const user = store.users.find(u => u.id === pendingDeleteId.value)
+        const user = store.users.find((u: User) => u.id === pendingDeleteId.value)
         store.deleteUser(pendingDeleteId.value)
         log('Users', 'deleted', `Deleted user "${user?.name ?? 'Unknown'}"`, { meta: { id: pendingDeleteId.value } })
         toast.error('User Deleted', 'The user has been permanently removed.')
@@ -104,9 +132,17 @@ const tableColumns: TableColumn<User>[] = [
         ])
     },
     {
-        accessorKey: 'role',
-        header: 'Role',
-        cell: ({ row }) => h('span', { class: '' }, row.original.role)
+        id: 'assignedRoles',
+        header: 'Assigned Roles',
+        cell: ({ row }) => {
+            const roleNames = getRoleNames(row.original.id)
+            if (roleNames.length === 0) {
+                return h('span', { class: 'text-muted italic text-xs' }, 'No roles assigned')
+            }
+            return h('div', { class: 'flex flex-wrap gap-1' }, roleNames.map((name: string) => 
+                h(UBadge, { label: name, variant: 'subtle', color: 'primary', size: 'sm' })
+            ))
+        }
     },
     {
         accessorKey: 'email',
@@ -139,7 +175,14 @@ const tableColumns: TableColumn<User>[] = [
         header: '',
         meta: { class: { td: 'text-right' } },
         cell: ({ row }) => {
-            const items: DropdownMenuItem[][] = [
+            const items = [
+                [
+                    {
+                        label: 'Manage Roles',
+                        icon: 'i-lucide-shield-plus',
+                        onSelect: () => openManageRolesModal(row.original)
+                    }
+                ],
                 [
                     {
                         label: 'Edit',
@@ -232,6 +275,8 @@ const filteredUsers = computed(() => {
                             <div class="text-sm font-bold truncate">{{ user.name }}</div>
                         </div>
                         <UDropdownMenu :items="[[
+                            { label: 'Manage Roles', icon: 'i-lucide-shield-plus', onSelect: () => openManageRolesModal(user) }
+                        ], [
                             { label: 'Edit', icon: 'i-lucide-edit', onSelect: () => openEditModal(user) }
                         ], [
                             { label: 'Delete', icon: 'i-lucide-trash', color: 'error', onSelect: () => promptDelete(user.id) }
@@ -246,8 +291,11 @@ const filteredUsers = computed(() => {
                             <UBadge :label="user.id.slice(0, 8)" variant="soft" color="neutral" class="font-mono" />
                         </div>
                         <div>
-                            <div class="text-muted">Role</div>
-                            <span class="truncate">{{ user.role }}</span>
+                            <div class="text-muted">Assigned Roles</div>
+                            <div class="flex gap-1 justify-end max-w-[60%] flex-wrap">
+                                <span v-if="getRoleNames(user.id).length === 0" class="text-muted italic text-xs">No roles assigned</span>
+                                <UBadge v-else v-for="role in getRoleNames(user.id)" :key="role" :label="role" variant="subtle" color="primary" size="sm" />
+                            </div>
                         </div>
                         <div>
                             <div class="text-muted w-full">Email</div>
@@ -292,4 +340,7 @@ const filteredUsers = computed(() => {
 
     <!-- Add / Edit User Modal -->
     <AddUserModal ref="modalRef" v-model:open="isOpen" :is-editing="isEditing" @save="handleSave" />
+
+    <!-- Manage Roles Modal -->
+    <ManageUserRolesModal ref="manageRolesModalRef" v-model:open="isManageRolesOpen" :user-id="manageRolesUserId" @save="handleManageRolesSave" />
 </template>

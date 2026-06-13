@@ -17,7 +17,7 @@ const avatarUrl = computed(() => `https://api.dicebear.com/10.x/thumbs/svg?seed=
 // ── Appearance ────────────────────────────────────────────────────────────
 const isDark = computed({
     get: () => colorMode.value === 'dark',
-    set: (val) => { colorMode.preference = val ? 'dark' : 'light' },
+    set: (val: boolean) => { colorMode.preference = val ? 'dark' : 'light' },
 })
 
 const primaryColors = ['teal', 'blue', 'violet', 'rose', 'orange', 'emerald', 'sky', 'pink', 'indigo']
@@ -130,13 +130,13 @@ const confirmResetSettings = () => {
                             <button
                                 class="size-7 rounded-full ring-2 ring-offset-2 ring-offset-default transition-all flex items-center justify-center"
                                 :class="[
-                                    appConfig.ui.colors.primary === color
+                                    settings.themePrimary === color
                                         ? 'ring-default scale-110'
                                         : 'ring-transparent hover:scale-105'
                                 ]" :style="`background-color: var(--color-${color}-500)`"
                                 :aria-label="`Set ${color} as primary color`"
-                                @click="appConfig.ui.colors.primary = color">
-                                <UIcon v-if="appConfig.ui.colors.primary === color" name="i-lucide-check"
+                                @click="settings.setThemePrimary(color)">
+                                <UIcon v-if="settings.themePrimary === color" name="i-lucide-check"
                                     class="size-3.5 text-white drop-shadow" />
                             </button>
                         </UTooltip>
@@ -155,13 +155,13 @@ const confirmResetSettings = () => {
                             <button
                                 class="size-7 rounded-full ring-2 ring-offset-2 ring-offset-default transition-all flex items-center justify-center"
                                 :class="[
-                                    appConfig.ui.colors.neutral === color
+                                    settings.themeNeutral === color
                                         ? 'ring-default scale-110'
                                         : 'ring-transparent hover:scale-105'
                                 ]" :style="`background-color: var(--color-${color}-500)`"
                                 :aria-label="`Set ${color} as neutral color`"
-                                @click="appConfig.ui.colors.neutral = color">
-                                <UIcon v-if="appConfig.ui.colors.neutral === color" name="i-lucide-check"
+                                @click="settings.setThemeNeutral(color)">
+                                <UIcon v-if="settings.themeNeutral === color" name="i-lucide-check"
                                     class="size-3.5 text-white drop-shadow" />
                             </button>
                         </UTooltip>

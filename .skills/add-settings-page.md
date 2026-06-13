@@ -73,12 +73,12 @@ Create a preferences page with form sections for account display, display prefer
    })
    ```
 
-7. **Appearance — color picker** (access `appConfig` directly, same pattern as `UserMenu`):
+7. **Appearance — color picker** (Use `settingsStore` to persist, then sync to `appConfig`):
    ```ts
    const primaryColors = ['teal', 'blue', 'violet', 'rose', 'orange', 'emerald', 'sky', 'pink', 'indigo']
    // In template:
    // :style="`background-color: var(--color-${color}-500)`"
-   // @click="appConfig.ui.colors.primary = color"
+   // @click="settingsStore.setThemePrimary(color)"
    ```
 
 8. **Destructive actions** always use `ConfirmationModal`:
@@ -110,6 +110,8 @@ export const useSettingsStore = defineStore('settingsStore', {
     state: () => ({
         defaultViewMode: 'list' as 'list' | 'card',
         compactMode: false,
+        themePrimary: 'teal',
+        themeNeutral: 'taupe',
         // Add new preferences here — each needs a matching action
     }),
 
@@ -137,6 +139,26 @@ const viewMode = ref<'list' | 'card'>(settings.defaultViewMode)
 ```
 
 > The `ref` captures the value at mount time — the CRUD page does not reactively follow store changes while the page is open. This is intentional: changing view mode in Settings takes effect on the next page visit, not mid-session.
+
+To wire global app configuration (like Nuxt UI colors) so they instantly update and persist across refreshes, use a client-side watcher in `app.vue`:
+
+```vue
+<!-- app.vue -->
+<script setup>
+const appConfig = useAppConfig()
+const settings = useSettingsStore()
+
+if (import.meta.client) {
+  // 1. Sync the persisted store state to the runtime appConfig on mount
+  appConfig.ui.colors.primary = settings.themePrimary
+  appConfig.ui.colors.neutral = settings.themeNeutral
+
+  // 2. Watch for any changes made in the Settings page and apply them instantly
+  watch(() => settings.themePrimary, (val) => appConfig.ui.colors.primary = val)
+  watch(() => settings.themeNeutral, (val) => appConfig.ui.colors.neutral = val)
+}
+</script>
+```
 
 ## Conventions
 - **No `isTable: true`** — Settings uses the natural scroll layout (`p-4 overflow-y-auto scrollbar`)

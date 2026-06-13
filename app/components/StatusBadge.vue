@@ -12,7 +12,6 @@
  *   icon    — Optional Lucide icon name to show inside the badge
  *             (e.g. 'i-lucide-check-circle'). Falls back to no icon if omitted.
  */
-import { computed } from 'vue'
 
 const props = defineProps<{
     status: string
@@ -22,7 +21,7 @@ const props = defineProps<{
 // BadgeColor must stay in sync with ui.theme.colors in nuxt.config.ts.
 // Adding a color there without adding it here will cause a TypeScript error.
 type BadgeColor =
-    | 'primary' | 'secondary' | 'tertiary' | 'info' | 'success' | 'warning' | 'error' | 'neutral'
+    | 'primary' | 'secondary' | 'info' | 'success' | 'warning' | 'error' | 'neutral'
     | 'red' | 'orange' | 'amber' | 'yellow' | 'lime' | 'green' | 'emerald' | 'teal'
     | 'cyan' | 'sky' | 'blue' | 'indigo' | 'violet' | 'purple' | 'fuchsia' | 'pink' | 'rose'
 

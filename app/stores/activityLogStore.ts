@@ -67,14 +67,14 @@ export const useActivityLogStore = defineStore('activityLogStore', {
         hasLogs: (state) => state.logs.length > 0,
 
         /** Unique list of modules that have logs */
-        modules: (state): string[] => [...new Set(state.logs.map((l) => l.module))],
+        modules: (state): string[] => [...new Set<string>(state.logs.map((l: ActivityLog) => l.module))],
 
         /** Most recent N logs (default 50) */
         recentLogs: (state) => (limit = 50) => state.logs.slice(0, limit),
 
         /** Filter logs by a specific module */
         logsByModule: (state) => (module: string) =>
-            state.logs.filter((l) => l.module === module),
+            state.logs.filter((l: ActivityLog) => l.module === module),
     },
 
     persist: {

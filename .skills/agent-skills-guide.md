@@ -27,7 +27,7 @@ app-sandbox/
 │   ├── agent-skills-guide.md    ← This file (developer reference)
 │   ├── add-entity.md            ← Full scaffold: type → seeder → store → page
 │   ├── add-type.md              ← Add a TypeScript interface
-│   ├── add-seeder-entity.md     ← Extend the seeder with a new entity
+│   ├── add-mock-api-endpoint.md     ← Create a Nuxt Server API for mock data
 │   ├── add-store.md             ← Scaffold a Pinia store
 │   ├── add-crud-page.md         ← Scaffold a full CRUD page
 │   ├── add-dashboard-page.md    ← Scaffold a StatCard overview/summary page
@@ -214,16 +214,16 @@ The full Tailwind palette is registered in two places — both must stay in sync
 - `isLoading` toggled around `setTimeout` calls
 - New records always `unshift()` — never `push()`
 - `persistedState.localStorage` for persistence (auto-imported global)
+- **Explicit Types in Callbacks** — Vue's reactive boundaries (computed, watchers, templates) often drop type inference when looping through complex array states. Always explicitly type callback parameters (e.g. `.findIndex((u: User) => ...)` or `.map((c: KanbanColumn) => ...)`) to avoid `implicit any` TS errors.
 - **`authStore`** is a special store — no seeder, no `isLoading`, no entity CRUD. It only manages session: `login(role)` and `logout()`
 - **`settingsStore`** is a special store — no seeder, no `isLoading`. Manages persisted UI preferences via typed setters.
 - **`notificationStore`** manages the in-app notification feed. Has `addNotification`, `markAsRead`, `markAllAsRead`, `deleteNotification`, `deployMockData` / `removeMockData`. Sidebar badge is driven by `notificationStore.unreadCount`. The `allNavItems` computed in `default.vue` must remain a `computed()` (not a static array) so the badge stays reactive.
 
-### Seeder Pattern
-- `SeederService` plain object in `app/utils/seeder.ts`
-- Per-entity triplet: `generateSingle<Entity>()`, `generate<Entity>s(count)`, `clear<Entity>s()`
-- Dashboard entities use a pair: `generateDashboard()` / `clearDashboard()` — returns the full `DashboardData` shape
-- Types are imported and re-exported from `seeder.ts` so stores import from `~/utils/seeder`
-- **Avatar URLs** use DiceBear: `` `https://api.dicebear.com/10.x/thumbs/svg?seed=${encodeURIComponent(faker.person.fullName())}` `` — do NOT use `faker.image.personPortrait()` or `faker.image.url()` for avatars
+### Mock API Pattern
+- Mock data is statically defined in `server/api/<entity>s.ts` endpoints.
+- Pinia stores fetch this data using `$fetch` via `await deployMockData()`.
+- Dashboard entities use a single endpoint `/api/dashboard` which returns the full `DashboardData` shape.
+- **Avatar URLs** use DiceBear: `` `https://api.dicebear.com/10.x/thumbs/svg?seed=${encodeURIComponent(name)}` `` — do NOT use faker.
 
 ### CRUD Page Pattern
 - `viewMode` values: `'list'` | `'card'` (NOT `'table'`)
@@ -266,6 +266,12 @@ All core logic files (Stores, Composables, Utils) must include a standardized he
 //   // code example
 ```
 
+### TypeScript Strictness & Nuxt 3 Quirks
+The project runs with strict TypeScript. Be aware of the following Nuxt 3 and Vue 3 quirks:
+1. **Implicit `any` in Vue Reactive Boundaries**: Vue's reactive boundaries (e.g., inside `computed()`, inline arrow functions in templates like `@update:model-value`, `v-for` loops, `.map()`, `.filter()`, `.find()` inside `script setup`) frequently lose type inference. **You must ALWAYS explicitly type the parameters of inline functions** (e.g., `(val: boolean) =>`, `(u: User) =>`, `(item: NavigationMenuItem) =>`) to satisfy strict TS rules and prevent `Parameter implicitly has an 'any' type` errors.
+2. **Nuxt 3 Auto-imports Conflicts**: NEVER manually import Vue composition APIs (like `ref`, `computed`, `h`, `onMounted`) from `'vue'`. Nuxt 3 automatically imports these globally. Manually importing them frequently causes TypeScript module resolution conflicts (e.g., `Module '"vue"' has no exported member 'computed'`).
+3. **Nuxt UI Strictness with Intersection Types**: When defining dropdown items for `UDropdownMenu`, avoid strictly typing arrays as `const items: DropdownMenuItem[][] = [...]`. The Nuxt UI intersection types often incorrectly demand underlying HTML attributes like `name` or `autofocus`. Let TypeScript infer the shape (`const items = [...]`) so it passes cleanly to the render function.
+
 ---
 
 ## Skills in This Project
@@ -274,10 +280,10 @@ All core logic files (Stores, Composables, Utils) must include a standardized he
 Runs the entire pipeline in one shot: creates the type, extends the seeder, scaffolds the Pinia store, and builds the CRUD page. Use this when adding a brand new entity from scratch.
 
 ### `add-type.md` — TypeScript Interface
-Creates `app/types/<entity>.ts` with a typed interface and re-exports it through `app/utils/seeder.ts` so stores have a single import source.
+Creates `app/types/<entity>.ts` with a typed interface to be imported by stores and APIs.
 
-### `add-seeder-entity.md` — Seeder Extension
-Adds `generateSingle<Entity>()`, `generate<Entity>s()`, and `clear<Entity>s()` methods to `SeederService` in `app/utils/seeder.ts`. Includes a faker method reference table.
+### `add-mock-api-endpoint.md` — Mock API Endpoint
+Creates `server/api/<entity>s.ts` with a deterministic, hardcoded JSON array of mock data to be served to Pinia stores via Nuxt Server APIs.
 
 ### `add-store.md` — Pinia Store
 Scaffolds `app/stores/<entity>Store.ts` with the options API style, `isLoading` flag, `deployMockData`/`removeMockData` actions, full CRUD actions, getters, and `localStorage` persistence.
@@ -311,7 +317,7 @@ Builds the full `app/pages/<entity>.vue` **and** its form modal component `app/c
 - `onColumnDragOver` sets `dragOver.cardId = null` → highlights the column drop zone with `ring-dashed bg-primary/5`
 - `@drop.prevent.stop` on cards prevents the column `@drop` from also firing
 - Inline add-card form per column: toggled by `addingCard` ref (columnId or null); uses `UInput` + `USelect` for priority; `@keyup.enter` confirms, `@keyup.esc` cancels
-- **Seeder Integration**: Uses `SeederService.generateKanbanCards(count)` for realistic mock data rather than hardcoded store factories.
+- **Mock Data Integration**: Fetches from `/api/kanban` for realistic mock data rather than hardcoded store factories.
 - **Search & Tag Filters**: Uses `<TableGlobalFilter>` for text search and `<USelectMenu multiple>` for a Tag filter. A `displayColumns` computed property dynamically filters cards based on search input and selected tags.
 - **Column Dropdown Menu**: Includes a `<UDropdownMenu>` inside the card modal header to allow users to move cards between columns without dragging.
 - **Do NOT auto-seed on `onMounted`** — the store starts empty like all other stores; seeding is exclusively via DemoFab. Auto-seeding on mount silently re-populates the board after a system reset.
@@ -319,7 +325,7 @@ Builds the full `app/pages/<entity>.vue` **and** its form modal component `app/c
 - `deployMockData()` / `removeMockData()` wired into `DemoFab`
 
 ### `add-dashboard-page.md` — Dashboard / Overview Page
-Builds a non-table summary page with `StatCard` KPI grids and Chart.js charts. Uses the full Faker → SeederService → Pinia store pipeline:
+Builds a non-table summary page with `StatCard` KPI grids and Chart.js charts. Uses the full Nuxt Server API → Pinia store pipeline:
 - Does NOT use `isTable: true` — layout applies standard scrollable padding automatically
 - Requires a dedicated `<name>Store` with `deployMockData()` / `removeMockData()` wired into `DemoFab`
 - All stat card and chart data comes from the store — no hardcoded values in the template
@@ -361,7 +367,7 @@ When you want the agent to follow a skill, simply reference it in your message:
 ```
 
 ```
-"Use .skills/add-seeder-entity.md to add fake Task data to the seeder."
+"Use .skills/add-mock-api-endpoint.md to add fake Task data endpoint."
 ```
 
 The agent will read the file with `IsSkillFile: true`, treating it as executable instructions rather than a file to summarize.
@@ -385,7 +391,7 @@ The agent will read the file with `IsSkillFile: true`, treating it as executable
 |---|---|
 | `add-entity.md` | Full scaffold: type → seeder → store → page |
 | `add-type.md` | TypeScript interface in `app/types/` |
-| `add-seeder-entity.md` | Extend `SeederService` with new entity generators |
+| `add-mock-api-endpoint.md` | Create a Nuxt Server API endpoint for mock data |
 | `add-store.md` | Pinia store with CRUD actions + localStorage persistence |
 | `add-crud-page.md` | Full CRUD page: `PageHeading`, table, cards, modals, toasts |
 | `add-dashboard-page.md` | Overview page with `StatCard` KPIs and recent-activity list |

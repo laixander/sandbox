@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { KanbanPriority } from '~/types/kanban'
+import type { KanbanPriority, KanbanColumn, KanbanCard } from '~/types/kanban'
 
 definePageMeta({ title: 'Kanban', isTable: true })
 
@@ -12,28 +12,28 @@ const selectedTags = ref<string[]>([])
 
 const availableTags = computed(() => {
     const tags = new Set<string>()
-    store.columns.forEach(col => {
+    store.columns.forEach((col: KanbanColumn) => {
         col.cards.forEach(card => {
-            card.tags?.forEach(t => tags.add(t))
+            card.tags?.forEach((t: string) => tags.add(t))
         })
     })
     return Array.from(tags).sort()
 })
 
 const displayColumns = computed(() => {
-    return store.columns.map(c => {
+    return store.columns.map((c: KanbanColumn) => {
         const filteredCards = c.cards.filter(card => {
             let matchSearch = true
             if (searchQuery.value) {
                 const query = searchQuery.value.toLowerCase()
                 matchSearch = card.title.toLowerCase().includes(query) || 
                        card.description?.toLowerCase().includes(query) ||
-                       (card.tags?.some(t => t.toLowerCase().includes(query)) ?? false)
+                       (card.tags?.some((t: string) => t.toLowerCase().includes(query)) ?? false)
             }
 
             let matchTags = true
             if (selectedTags.value.length > 0) {
-                matchTags = selectedTags.value.some(tag => card.tags?.includes(tag))
+                matchTags = selectedTags.value.some((tag: string) => card.tags?.includes(tag))
             }
 
             return matchSearch && matchTags
@@ -83,19 +83,21 @@ const onCardDragStart = (e: DragEvent, cardId: string, columnId: string, locked:
 
 const onCardDragOver = (cardId: string, columnId: string) => {
     if (!dragging.value) return
+    if (dragOver.value?.cardId === cardId && dragOver.value?.columnId === columnId) return
     dragOver.value = { columnId, cardId }
 }
 
 const onColumnDragOver = (columnId: string) => {
     if (!dragging.value) return
+    if (dragOver.value?.columnId === columnId && dragOver.value?.cardId === null) return
     dragOver.value = { columnId, cardId: null }
 }
 
 const moveCard = (cardId: string, fromColumnId: string, toColumnId: string, insertBeforeCardId?: string) => {
     // Resolve human-readable names for the log message
-    const fromCol = store.columns.find(c => c.id === fromColumnId)
-    const toCol = store.columns.find(c => c.id === toColumnId)
-    const card = fromCol?.cards.find(c => c.id === cardId)
+    const fromCol = store.columns.find((c: KanbanColumn) => c.id === fromColumnId)
+    const toCol = store.columns.find((c: KanbanColumn) => c.id === toColumnId)
+    const card = fromCol?.cards.find((c: KanbanCard) => c.id === cardId)
 
     store.moveCard(cardId, fromColumnId, toColumnId, insertBeforeCardId)
 
@@ -134,7 +136,7 @@ const newCardPriority = ref<KanbanPriority>('medium')
 // Auto-focus the title input whenever the add-card form is shown.
 // Uses a querySelector because the UInput is inside a v-for — useTemplateRef
 // would return an array and the exposed property name is ambiguous.
-watch(addingCard, async (val) => {
+watch(addingCard, async (val: string | null) => {
     if (!val) return
     await nextTick()
     document.querySelector<HTMLInputElement>('.kanban-add-card-input input')?.focus()
@@ -151,7 +153,7 @@ const confirmAddCard = () => {
         cancelAddCard()
         return
     }
-    const col = store.columns.find(c => c.id === addingCard.value)
+    const col = store.columns.find((c: KanbanColumn) => c.id === addingCard.value)
     store.addCard(addingCard.value, {
         title: newCardTitle.value.trim(),
         priority: newCardPriority.value,
@@ -190,6 +192,7 @@ const onTagDragStart = (e: DragEvent, cardId: string, tag: string) => {
 
 const onTagDragOver = (cardId: string, tag: string) => {
     if (!draggedTag.value || draggedTag.value.cardId !== cardId) return
+    if (dragOverTag.value?.cardId === cardId && dragOverTag.value?.tag === tag) return
     dragOverTag.value = { cardId, tag }
 }
 
@@ -202,7 +205,7 @@ const onTagDrop = (cardId: string, targetTag: string) => {
         return
     }
 
-    const card = store.columns.flatMap(c => c.cards).find(c => c.id === cardId)
+    const card = store.columns.flatMap((c: KanbanColumn) => c.cards).find((c: KanbanCard) => c.id === cardId)
     if (!card) return
 
     const fromIndex = card.tags.indexOf(sourceTag)
@@ -225,8 +228,8 @@ const onTagDragEnd = () => {
 const getColumnDropdownItems = (cardId: string, currentColumnId: string) => {
     return [
         store.columns
-            .filter(c => c.id !== currentColumnId)
-            .map(c => ({
+            .filter((c: KanbanColumn) => c.id !== currentColumnId)
+            .map((c: KanbanColumn) => ({
                 label: c.title,
                 icon: c.icon,
                 onSelect: () => moveCard(cardId, currentColumnId, c.id)
@@ -275,10 +278,12 @@ const getColumnDropdownItems = (cardId: string, currentColumnId: string) => {
                         @drop.prevent="onDrop(column.id)" @dragend="onDragEnd">
                         <template v-for="card in column.cards" :key="card.id">
 
-                            <!-- Drop-before indicator -->
-                            <div v-if="isCardOver(card.id)" class="h-0.5 rounded-full bg-primary mx-1 shrink-0" />
+                            <!-- Card wrapper to prevent layout shift -->
+                            <div class="relative">
+                                <!-- Drop-before indicator -->
+                                <div v-if="isCardOver(card.id)" class="absolute -top-[5px] left-1 right-1 h-0.5 rounded-full bg-primary z-10 pointer-events-none" />
 
-                            <!-- Modal wrapper for card -->
+                                <!-- Modal wrapper for card -->
                             <UModal :ui="{ header: 'flex justify-between items-center' }">
                                 <template #header="{ close }">
                                     <div class="flex items-center gap-2">
@@ -362,9 +367,11 @@ const getColumnDropdownItems = (cardId: string, currentColumnId: string) => {
                                                 <div class="flex flex-wrap gap-1.5"
                                                     v-if="card.tags && card.tags.length">
                                                     <template v-for="tag in card.tags" :key="tag">
-                                                        <!-- Drop-before indicator -->
-                                                        <div v-if="dragOverTag?.cardId === card.id && dragOverTag?.tag === tag"
-                                                            class="w-0.5 rounded-full bg-primary mx-0.5 shrink-0" />
+                                                        <!-- Tag wrapper to prevent layout shift -->
+                                                        <div class="relative flex">
+                                                            <!-- Drop-before indicator -->
+                                                            <div v-if="dragOverTag?.cardId === card.id && dragOverTag?.tag === tag"
+                                                                class="absolute -left-[4px] top-0 bottom-0 w-0.5 rounded-full bg-primary z-10 pointer-events-none" />
 
                                                         <UBadge color="neutral" variant="soft" size="sm"
                                                             class="flex items-center gap-1 cursor-grab active:cursor-grabbing transition-transform"
@@ -374,11 +381,12 @@ const getColumnDropdownItems = (cardId: string, currentColumnId: string) => {
                                                             @dragover.prevent="onTagDragOver(card.id, tag)"
                                                             @drop.prevent="onTagDrop(card.id, tag)"
                                                             @dragend="onTagDragEnd">
-                                                            {{ tag }}
-                                                            <UIcon name="i-lucide-x"
-                                                                class="size-3 cursor-pointer hover:text-error"
-                                                                @click.stop="card.tags = card.tags.filter(t => t !== tag)" />
-                                                        </UBadge>
+                                                                {{ tag }}
+                                                                <UIcon name="i-lucide-x"
+                                                                    class="size-3 cursor-pointer hover:text-error"
+                                                                    @click.stop="card.tags = card.tags.filter((t: string) => t !== tag)" />
+                                                            </UBadge>
+                                                        </div>
                                                     </template>
                                                 </div>
                                                 <UInput placeholder="Type and press Enter to add tags..." size="sm"
@@ -394,6 +402,7 @@ const getColumnDropdownItems = (cardId: string, currentColumnId: string) => {
                                     </div>
                                 </template>
                             </UModal>
+                            </div>
                         </template>
 
                         <!-- Inline add-card form -->
@@ -415,12 +424,12 @@ const getColumnDropdownItems = (cardId: string, currentColumnId: string) => {
                         <UEmpty v-if="column.cards.length === 0 && addingCard !== column.id" variant="naked"
                             icon="i-lucide-inbox" title="No cards" description="Drop a card here or add one below"
                             class="flex-1 py-4" />
-
-                        <!-- Add card trigger -->
-                        <UButton v-if="addingCard !== column.id" label="Add Card" icon="i-lucide-plus" size="xs"
-                            color="neutral" variant="ghost" class="shrink-0 justify-start mt-auto"
-                            @click="startAddCard(column.id)" />
                     </div>
+
+                    <!-- Add card trigger -->
+                    <UButton v-if="addingCard !== column.id" label="Add Card" icon="i-lucide-plus" size="xs"
+                        color="neutral" variant="ghost" class="shrink-0 justify-start mt-auto"
+                        @click="startAddCard(column.id)" />
                 </div>
 
             </div>

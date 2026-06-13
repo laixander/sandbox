@@ -185,6 +185,23 @@ const items = computed<NavigationMenuItem[][]>(() => [
 
 ---
 
+### Step 6 — Add the role to the dynamic Role UI (roleStore)
+
+Now that you have a dynamic CRUD page for Roles (`/roles`), you should also add your new role to the initial mock data in `app/stores/roleStore.ts` so that it appears in the table and can be assigned to users in the UI.
+
+Open `app/stores/roleStore.ts` and add it to the `roles` array:
+
+```ts
+export const useRoleStore = defineStore('roleStore', {
+    state: () => ({
+        roles: [
+            { id: 'role-admin', name: 'Admin', description: 'Administrator with full access' },
+            { id: 'role-staff', name: 'Staff', description: 'Regular staff member' },
+            // Add the new role here:
+            { id: 'role-manager', name: 'Manager', description: 'Manager with elevated access' },
+        ] as Role[],
+```
+
 ## Conventions
 - **Always update all 4 required files** (type → store → login → middleware) in one pass — leaving any out will cause TypeScript errors or broken auth flows
 - `DEMO_USERS` must be a complete `Record<SystemRole, AuthUser>` — TypeScript will enforce exhaustiveness
@@ -197,6 +214,7 @@ const items = computed<NavigationMenuItem[][]>(() => [
 ## Output / Deliverables
 - `app/types/auth.ts` — new role added to `SystemRole`
 - `app/stores/authStore.ts` — new demo user profile in `DEMO_USERS`
+- `app/stores/roleStore.ts` — new dynamic role added to mock data
 - `app/pages/login.vue` — new role in `roleOptions` + redirect branch in `handleLogin`
 - `app/middleware/auth.global.ts` — access rules for the new role
 - `app/layouts/default.vue` — (optional) nav visibility update
@@ -207,4 +225,6 @@ const items = computed<NavigationMenuItem[][]>(() => [
 - Navigate directly to a restricted page as the new role — middleware redirects correctly
 - Sidebar shows only the expected nav items for the new role
 - `UserMenu` shows the correct name and role badge
+- Navigate to the `/roles` page and verify the new role appears in the table
+- Navigate to `/crud`, open "Manage Roles" for a user, and verify the new role can be assigned
 - Logging out returns to `/login` and clears the session

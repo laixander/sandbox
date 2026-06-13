@@ -22,6 +22,19 @@ useSeoMeta({
   ogImage: '',
   twitterCard: ''
 })
+
+const appConfig = useAppConfig()
+const settings = useSettingsStore()
+
+if (import.meta.client) {
+  // Sync initial persisted colors
+  appConfig.ui.colors.primary = settings.themePrimary
+  appConfig.ui.colors.neutral = settings.themeNeutral
+
+  // Watch for changes made in Settings
+  watch(() => settings.themePrimary, (val) => appConfig.ui.colors.primary = val)
+  watch(() => settings.themeNeutral, (val) => appConfig.ui.colors.neutral = val)
+}
 </script>
 
 <template>

@@ -59,7 +59,7 @@ const handleLogin = () => {
                 </UFormField>
                 <UFormField label="Role">
                     <USelect v-model="selectedRole" placeholder="Select your role"
-                        :items="roleOptions.map(r => ({ label: r.label, value: r.value }))" variant="soft" size="lg"
+                        :items="roleOptions.map((r: any) => ({ label: r.label, value: r.value }))" variant="soft" size="lg"
                         class="w-full" />
                 </UFormField>
 
@@ -67,12 +67,12 @@ const handleLogin = () => {
                 <Transition name="fade" mode="out-in">
                     <div v-if="selectedRole"
                         class="flex items-center gap-3 p-3 rounded-lg bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800">
-                        <UIcon :name="roleOptions.find(r => r.value === selectedRole)?.icon || 'i-lucide-user'"
+                        <UIcon :name="roleOptions.find((r: any) => r.value === selectedRole)?.icon || 'i-lucide-user'"
                             class="size-5 text-primary shrink-0" />
                         <div>
                             <div class="text-sm font-semibold text-primary">{{ selectedRole }}</div>
                             <div class="text-xs text-muted">
-                                {{roleOptions.find(r => r.value === selectedRole)?.description}}
+                                {{roleOptions.find((r: any) => r.value === selectedRole)?.description}}
                             </div>
                         </div>
                     </div>

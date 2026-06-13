@@ -9,7 +9,6 @@ Scaffold a complete new entity — type definition, Pinia store, seeder support,
 
 ## Prerequisites
 - The app is running with `bun run dev` or `pnpm dev`
-- `@faker-js/faker` is available as a dev dependency
 - Existing stores (`app/stores/`), types (`app/types/`), and pages (`app/pages/`) are present for reference
 - `app/layouts/default.vue` is in place
 
@@ -20,7 +19,7 @@ Run each sub-skill in this order. Each step has its own dedicated skill file for
 ### Step 1 — Add the TypeScript interface
 > **Skill**: `.skills/add-type.md`
 
-Create `app/types/<entity>.ts` with a named `export interface <Entity>`. Every entity must have `id: string` as its first field. Then re-export the type from `app/utils/seeder.ts` so stores can import both type and seeder from a single location.
+Create `app/types/<entity>.ts` with a named `export interface <Entity>`. Every entity must have `id: string` as its first field.
 
 ```ts
 // app/types/product.ts
@@ -33,15 +32,10 @@ export interface Product {
 }
 ```
 
-### Step 2 — Extend the seeder
-> **Skill**: `.skills/add-seeder-entity.md`
+### Step 2 — Create the Mock API Endpoint
+> **Skill**: `.skills/add-mock-api-endpoint.md`
 
-Add three methods to `SeederService` in `app/utils/seeder.ts`:
-- `generateSingle<Entity>(): <Entity>`
-- `generate<Entity>s(count: number = 5): <Entity>[]`
-- `clear<Entity>s(): <Entity>[]`
-
-Also add the import and re-export of the new type at the top of the file.
+Create `server/api/<entity>s.ts` and define a static JSON array of mock data to be served via Nuxt Server APIs.
 
 ### Step 3 — Create the Pinia store
 > **Skill**: `.skills/add-store.md`
@@ -55,8 +49,8 @@ export const use<Entity>Store = defineStore('<entity>Store', {
     isLoading: false,
   }),
   actions: {
-    deployMockData(count: number = 6) { ... },  // setTimeout 500ms
-    removeMockData() { ... },                    // setTimeout 300ms
+    async deployMockData() { ... },
+    removeMockData() { ... },
     create<Entity>(item: <Entity>) { this.<entities>.unshift(item) },
     update<Entity>(id: string, data: Partial<<Entity>>) { ... },
     delete<Entity>(id: string) { ... }
@@ -94,14 +88,14 @@ Open `app/layouts/default.vue` and add a nav item to the `items` array:
 
 ## Conventions
 - **Type file**: one interface, named export, no logic
-- **Seeder**: three methods per entity (`generateSingle*`, `generate*s`, `clear*s`), pure functions
-- **Store**: options API, `unshift()` for new records, `setTimeout` for async simulation, `persistedState.localStorage`
+- **Mock API**: `server/api/<entity>s.ts` exporting a deterministic JSON array
+- **Store**: options API, `unshift()` for new records, `$fetch` for mock data, `persistedState.localStorage`
 - **Page**: `definePageMeta` first, `isTable: true`, `PageHeading` with `forTable`, `UDropdownMenu` for actions, `ConfirmationModal` for destructive actions, `useAppToast()` for all notifications
-- **IDs**: `faker.string.uuid()` in seeder, `crypto.randomUUID()` in manual creates
+- **IDs**: hardcoded string UUIDs in mock data, `crypto.randomUUID()` in manual creates
 
 ## Output / Deliverables
 - `app/types/<entity>.ts` — new TypeScript interface
-- `app/utils/seeder.ts` — updated with new generator methods and type re-export
+- `server/api/<entity>s.ts` — new mock API endpoint
 - `app/stores/<entity>Store.ts` — new Pinia store with full CRUD + persist
 - `app/pages/<entity>.vue` — new CRUD page with list/card view and modals
 - `app/layouts/default.vue` — sidebar nav item added (if applicable)

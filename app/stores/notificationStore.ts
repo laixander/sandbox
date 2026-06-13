@@ -12,7 +12,6 @@
 //   store.deleteNotification(id)
 //   store.unreadCount    // reactive getter used by sidebar badge
 
-import { faker } from '@faker-js/faker'
 import { defineStore } from 'pinia'
 import type { Notification, NotificationType } from '~/types/notification'
 import type { NotificationTemplateId } from '~/utils/notificationTemplates'
@@ -24,9 +23,9 @@ export const useNotificationStore = defineStore('notificationStore', {
 
     getters: {
         unreadCount: (state): number =>
-            state.notifications.filter(n => !n.isRead).length,
+            state.notifications.filter((n: Notification) => !n.isRead).length,
         hasUnread: (state): boolean =>
-            state.notifications.some(n => !n.isRead),
+            state.notifications.some((n: Notification) => !n.isRead),
         hasNotifications: (state): boolean =>
             state.notifications.length > 0,
         totalCount: (state): number =>
@@ -52,78 +51,47 @@ export const useNotificationStore = defineStore('notificationStore', {
         },
 
         markAsRead(id: string) {
-            const n = this.notifications.find(n => n.id === id)
-            if (n) n.isRead = true
+            const notification = this.notifications.find((n: Notification) => n.id === id)
+            if (notification) notification.isRead = true
         },
 
         markAllAsRead() {
-            this.notifications.forEach(n => (n.isRead = true))
+            this.notifications.forEach((n: Notification) => (n.isRead = true))
         },
 
         deleteNotification(id: string) {
-            this.notifications = this.notifications.filter(n => n.id !== id)
+            this.notifications = this.notifications.filter((n: Notification) => n.id !== id)
         },
 
         clearAll() {
             this.notifications = []
         },
 
-        deployMockData() {
-            const now = Date.now()
-
-            // 1. Start with a standard welcome message
-            const mock: Omit<Notification, 'id'>[] = [
-                {
-                    templateId: 'welcome',
-                    payload: {},
-                    type: 'info',
-                    isRead: false,
-                    createdAt: new Date(now - 2 * 60 * 1000).toISOString(),
-                    module: 'System',
+        async deployMockData() {
+            try {
+                const data = await $fetch<Omit<Notification, 'id'>[]>('/api/notifications')
+                
+                // Add welcome message if empty
+                if (this.notifications.length === 0) {
+                    this.notifications.push({
+                        id: crypto.randomUUID(),
+                        templateId: 'welcome',
+                        payload: {},
+                        type: 'info',
+                        isRead: false,
+                        createdAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+                        module: 'System',
+                    })
                 }
-            ]
 
-            // 2. Define our template pool
-            const templates = [
-                { id: 'user_created', type: 'success', module: 'CRUD' },
-                { id: 'storage_warning', type: 'warning', module: 'System' },
-                { id: 'log_cleared', type: 'info', module: 'Activity Logs' },
-                { id: 'export_complete', type: 'success', module: 'CRUD' },
-                { id: 'failed_login', type: 'error', module: 'Auth' },
-                { id: 'system_alert', type: 'info', module: 'System' }
-            ] as const
+                const mockWithIds = data.map((n: Omit<Notification, 'id'>) => ({ id: crypto.randomUUID(), ...n }))
+                this.notifications.push(...mockWithIds)
 
-            // 3. Generate 15 random notifications
-            for (let i = 0; i < 15; i++) {
-                const t = faker.helpers.arrayElement(templates)
-                let payload: Record<string, any> = {}
-
-                if (t.id === 'user_created') payload = { userName: faker.person.fullName() }
-                if (t.id === 'storage_warning') payload = { usage: faker.number.int({ min: 80, max: 99 }) }
-                if (t.id === 'log_cleared') payload = { adminName: faker.person.fullName() }
-                if (t.id === 'export_complete') payload = { exportType: faker.helpers.arrayElement(['User Data', 'Activity Logs', 'System Config']) }
-                if (t.id === 'failed_login') payload = { email: faker.internet.email() }
-                if (t.id === 'system_alert') payload = { message: faker.hacker.phrase() }
-
-                // Random time within the last 7 days
-                const createdAt = new Date(now - faker.number.int({ min: 10 * 60 * 1000, max: 7 * 24 * 60 * 60 * 1000 })).toISOString()
-
-                mock.push({
-                    templateId: t.id,
-                    payload,
-                    type: t.type,
-                    isRead: faker.datatype.boolean({ probability: 0.6 }), // 60% chance it is already read
-                    createdAt,
-                    module: t.module
-                })
+                // Sort descending (newest first)
+                this.notifications.sort((a: Notification, b: Notification) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            } catch (err) {
+                console.error('Failed to load notifications', err)
             }
-
-            // 4. Assign IDs and merge into the store
-            const mockWithIds = mock.map(n => ({ id: crypto.randomUUID(), ...n }))
-            this.notifications.push(...mockWithIds)
-
-            // 5. Sort the entire array descending (newest first)
-            this.notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         },
 
         removeMockData() {
