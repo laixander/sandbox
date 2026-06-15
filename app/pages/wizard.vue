@@ -6,6 +6,8 @@ import type { User } from '~/types/user'
 definePageMeta({ title: 'New User Wizard' })
 
 const store = useUserStore()
+const roleStore = useRoleStore()
+const userRoleStore = useUserRoleStore()
 const toast = useAppToast()
 const { log } = useActivityLog()
 const { notify } = useNotify()
@@ -52,30 +54,23 @@ const onPersonalSubmit = () => stepper.value?.next()
 
 // ── Step 2 — Role & Status ────────────────────────────────────────────────
 const roleSchema = z.object({
-    role: z.enum(['Admin', 'Staff']),
+    roleId: z.string().min(1, 'Please select a role'),
     status: z.enum(['Active', 'Inactive']),
 })
 
-const roleData = reactive<{ role: 'Admin' | 'Staff'; status: 'Active' | 'Inactive' }>({
-    role: 'Staff',
+const roleData = reactive<{ roleId: string; status: 'Active' | 'Inactive' }>({
+    roleId: roleStore.roles[0]?.id || '',
     status: 'Active',
 })
 const roleFormRef = useTemplateRef('roleForm')
 
 const onRoleSubmit = () => stepper.value?.next()
 
-const roleOptions = [
-    {
-        value: 'Admin',
-        label: 'Admin',
-        description: 'Full access: dashboard, settings, and all pages',
-    },
-    {
-        value: 'Staff',
-        label: 'Staff',
-        description: 'Limited access: CRUD pages and activity logs',
-    },
-]
+const roleOptions = computed(() => roleStore.roles.map(r => ({
+    value: r.id,
+    label: r.name,
+    description: r.description,
+})))
 
 // ── Step 3 — Submit ───────────────────────────────────────────────────────
 const avatarSeed = computed(() =>
@@ -94,12 +89,13 @@ const handleSubmit = async () => {
         id: crypto.randomUUID(),
         name: personalData.name,
         email: personalData.email,
-        role: roleData.role,
+        role: roleStore.roles.find(r => r.id === roleData.roleId)?.name || 'Unknown',
         status: roleData.status,
         avatar: avatarPreview.value,
     }
 
     store.createUser(user)
+    userRoleStore.setRolesForUser(user.id, [roleData.roleId])
     log('Wizard', 'created', `Created user ${user.name} via wizard`, { meta: { role: user.role } })
     notify('user_created', { userName: user.name }, 'success', 'Wizard')
     toast.success('User Created', `${user.name} was added successfully.`)
@@ -121,7 +117,7 @@ const handleBack = () => stepper.value?.prev()
 const resetWizard = () => {
     currentStep.value = 0
     Object.assign(personalData, { name: '', email: '' })
-    Object.assign(roleData, { role: 'Staff', status: 'Active' })
+    Object.assign(roleData, { roleId: roleStore.roles[0]?.id || '', status: 'Active' })
     createdUser.value = null
 }
 </script>
@@ -167,8 +163,8 @@ const resetWizard = () => {
                         </div>
                         <UForm ref="roleForm" :schema="roleSchema" :state="roleData" class="space-y-6"
                             @submit="onRoleSubmit">
-                            <UFormField label="Role" name="role">
-                                <URadioGroup v-model="roleData.role" :items="roleOptions" class="space-y-2" />
+                            <UFormField label="Role" name="roleId">
+                                <URadioGroup v-model="roleData.roleId" :items="roleOptions" class="space-y-2" />
                             </UFormField>
 
                             <UFormField label="Account Status" name="status">
@@ -205,8 +201,8 @@ const resetWizard = () => {
                                 <p class="font-bold text-base truncate text-highlighted">{{ personalData.name }}</p>
                                 <p class="text-sm text-muted truncate">{{ personalData.email }}</p>
                                 <div class="flex items-center gap-2">
-                                    <UBadge :label="roleData.role"
-                                        :color="roleData.role === 'Admin' ? 'primary' : 'neutral'" variant="soft" />
+                                    <UBadge :label="roleStore.roles.find(r => r.id === roleData.roleId)?.name || 'Unknown'"
+                                        :color="roleStore.roles.find(r => r.id === roleData.roleId)?.name === 'Admin' ? 'primary' : 'neutral'" variant="soft" />
                                     <StatusBadge :status="roleData.status" />
                                 </div>
                             </div>

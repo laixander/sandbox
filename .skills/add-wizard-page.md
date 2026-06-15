@@ -211,10 +211,14 @@ const resetWizard = () => {
 
 ### 10. Register in the sidebar (`app/layouts/default.vue`):
 ```ts
-{ label: '<Label>', icon: 'i-lucide-wand-sparkles', to: '/<name>', meta: { adminOnly: true } }
+// app/layouts/default.vue
+const allNavItems = computed<NavigationMenuItem[]>(() => [
+    // ...
+    { label: '<Label>', icon: 'i-lucide-wand-sparkles', to: '/<name>' }
+])
 ```
 
-> Add `meta: { adminOnly: true }` if only Admins should access this page.
+> **Important**: To make the page accessible to users, you must also add the path to the `availablePages` array in `app/components/AddRoleModal.vue` and optionally include it in the default Admin role's `pages` array in `app/stores/roleStore.ts`.
 
 ---
 

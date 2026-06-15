@@ -10,19 +10,8 @@
 //   authStore.logout()
 
 import { defineStore } from 'pinia'
-import type { AuthUser, SystemRole } from '~/types/auth'
-
-// Pre-built demo user profiles per role
-const DEMO_USERS: Record<SystemRole, AuthUser> = {
-    Admin: {
-        name: 'Alex Rivera',
-        role: 'Admin',
-    },
-    Staff: {
-        name: 'Sam Torres',
-        role: 'Staff',
-    },
-}
+import type { AuthUser } from '~/types/auth'
+import { useRoleStore } from './roleStore'
 
 export const useAuthStore = defineStore('authStore', {
     state: () => ({
@@ -32,18 +21,31 @@ export const useAuthStore = defineStore('authStore', {
     getters: {
         /** Returns true if a user is currently logged in. */
         isAuthenticated: (state): boolean => state.currentUser !== null,
-        /** Returns the system role of the currently logged-in user. */
-        role: (state): SystemRole | null => state.currentUser?.role ?? null,
+        /** Returns the Role object of the currently logged-in user. */
+        role: (state) => {
+            if (!state.currentUser?.roleId) return null
+            const roleStore = useRoleStore()
+            return roleStore.roles.find(r => r.id === state.currentUser!.roleId) ?? null
+        },
         /** Returns true if the logged-in user is an Admin. */
-        isAdmin: (state): boolean => state.currentUser?.role === 'Admin',
+        isAdmin(): boolean {
+            return this.role?.name === 'Admin'
+        },
         /** Returns true if the logged-in user is Staff. */
-        isStaff: (state): boolean => state.currentUser?.role === 'Staff',
+        isStaff(): boolean {
+            return this.role?.name === 'Staff'
+        },
     },
 
     actions: {
-        /** Logs in a demo user with the specified role. */
-        login(role: SystemRole) {
-            this.currentUser = DEMO_USERS[role]
+        /** Logs in a demo user with the specified role ID. */
+        login(roleId: string) {
+            const roleStore = useRoleStore()
+            const role = roleStore.roles.find(r => r.id === roleId)
+            if (role) {
+                const name = role.name === 'Admin' ? 'Alex Rivera' : role.name === 'Staff' ? 'Sam Torres' : `${role.name} User`
+                this.currentUser = { name, roleId: role.id }
+            }
         },
 
         /** Clears the current user session. */

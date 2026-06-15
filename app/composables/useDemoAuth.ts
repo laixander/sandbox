@@ -8,15 +8,15 @@
 //   setRole('Admin')    // logs in as Admin
 //   logout()            // clears session
 
-import type { SystemRole } from '~/types/auth'
+
 import { useAuthStore } from '~/stores/authStore'
 
 export const useDemoAuth = () => {
     const store = useAuthStore()
     const router = useRouter()
 
-    const setRole = (role: SystemRole) => {
-        store.login(role)
+    const setRole = (roleId: string) => {
+        store.login(roleId)
     }
 
     const logout = async () => {

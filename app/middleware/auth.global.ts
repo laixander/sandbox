@@ -21,6 +21,11 @@ export default defineNuxtRouteMiddleware((to) => {
 
     const isLoginPage = to.path === '/login'
 
+    // Docs pages doesn't need authentication
+    if (to.path.startsWith('/docs')) {
+        return
+    }
+
     // Unauthenticated: allow only /login
     if (!authStore.isAuthenticated) {
         if (!isLoginPage) {
@@ -29,16 +34,16 @@ export default defineNuxtRouteMiddleware((to) => {
         return
     }
 
-    // Authenticated user visiting /login → redirect to home
+    // Authenticated user visiting /login → redirect to first allowed page
     if (isLoginPage) {
-        if (authStore.role === 'Admin') {
-            return navigateTo('/')
+        const pages = authStore.role?.pages || []
+        if (pages.length > 0) {
+            return navigateTo(pages[0])
         }
-        return navigateTo('/crud')
+        return navigateTo('/')
     }
 
-    // Staff cannot access Dashboard
-    if (authStore.role === 'Staff' && to.path === '/') {
-        return navigateTo('/crud')
-    }
+    // Allow navigation to proceed. 
+    // Authorization check (AuthGate) is handled by the layout.
+    return
 })

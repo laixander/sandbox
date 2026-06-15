@@ -32,22 +32,35 @@ const openEditModal = (role: Role) => {
     modalRef.value?.reset({
         name: role.name,
         description: role.description,
+        pages: role.pages,
     })
     isOpen.value = true
 }
 
-const handleSave = (data: { name: string; description: string }) => {
+const pendingSaveData = ref<{ name: string; description: string; pages?: string[] } | null>(null)
+const isEditConfirmOpen = ref(false)
+
+const handleSave = (data: { name: string; description: string; pages?: string[] }) => {
     if (isEditing.value && currentRoleId.value) {
-        store.updateRole(currentRoleId.value, data)
-        log('Roles', 'updated', `Updated role "${data.name}"`, { meta: { id: currentRoleId.value } })
-        toast.success('Role Updated', `${data.name} has been updated.`)
+        pendingSaveData.value = data
+        isOpen.value = false
+        isEditConfirmOpen.value = true
     } else {
         const newRole: Role = { id: crypto.randomUUID(), ...data }
         store.createRole(newRole)
         log('Roles', 'created', `Created role "${data.name}"`, { meta: { id: newRole.id } })
         toast.success('Role Created', `${data.name} has been added.`)
+        isOpen.value = false
     }
-    isOpen.value = false
+}
+
+const confirmSave = () => {
+    if (currentRoleId.value && pendingSaveData.value) {
+        store.updateRole(currentRoleId.value, { ...pendingSaveData.value })
+        log('Roles', 'updated', `Updated role "${pendingSaveData.value.name}"`, { meta: { id: currentRoleId.value } })
+        toast.success('Role Updated', `${pendingSaveData.value.name} has been updated.`)
+        pendingSaveData.value = null
+    }
 }
 
 // Confirmation modal state
@@ -95,7 +108,7 @@ const tableColumns: TableColumn<Role>[] = [
         header: '',
         meta: { class: { td: 'text-right' } },
         cell: ({ row }) => {
-            const items = [
+            const items: any[][] = [
                 [
                     {
                         label: 'Edit',
@@ -168,6 +181,11 @@ const columnVisibility = ref({
     <ConfirmationModal v-model:open="isDeleteConfirmOpen" title="Delete role?"
         description="This will permanently remove the role. This action cannot be undone." confirm-label="Yes, Delete"
         confirm-color="error" @confirm="confirmDelete" />
+
+    <!-- Edit Confirmation Modal -->
+    <ConfirmationModal v-model:open="isEditConfirmOpen" title="Save changes?"
+        description="Are you sure you want to save these changes to the role?" confirm-label="Save Changes"
+        confirm-color="warning" @confirm="confirmSave" />
 
     <!-- Add / Edit Role Modal -->
     <AddRoleModal ref="modalRef" v-model:open="isOpen" :is-editing="isEditing" @save="handleSave" />

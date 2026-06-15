@@ -139,7 +139,7 @@ const tableColumns: TableColumn<User>[] = [
             if (roleNames.length === 0) {
                 return h('span', { class: 'text-muted italic text-xs' }, 'No roles assigned')
             }
-            return h('div', { class: 'flex flex-wrap gap-1' }, roleNames.map((name: string) => 
+            return h('div', { class: 'flex flex-wrap gap-1' }, roleNames.map((name: string) =>
                 h(UBadge, { label: name, variant: 'subtle', color: 'primary', size: 'sm' })
             ))
         }
@@ -175,7 +175,7 @@ const tableColumns: TableColumn<User>[] = [
         header: '',
         meta: { class: { td: 'text-right' } },
         cell: ({ row }) => {
-            const items = [
+            const items: any[][] = [
                 [
                     {
                         label: 'Manage Roles',
@@ -293,8 +293,11 @@ const filteredUsers = computed(() => {
                         <div>
                             <div class="text-muted">Assigned Roles</div>
                             <div class="flex gap-1 justify-end max-w-[60%] flex-wrap">
-                                <span v-if="getRoleNames(user.id).length === 0" class="text-muted italic text-xs">No roles assigned</span>
-                                <UBadge v-else v-for="role in getRoleNames(user.id)" :key="role" :label="role" variant="subtle" color="primary" size="sm" />
+                                <span v-if="getRoleNames(user.id).length === 0" class="text-muted italic text-xs">No
+                                    roles
+                                    assigned</span>
+                                <UBadge v-else v-for="role in getRoleNames(user.id)" :key="role" :label="role"
+                                    variant="subtle" color="primary" size="sm" />
                             </div>
                         </div>
                         <div>
@@ -342,5 +345,6 @@ const filteredUsers = computed(() => {
     <AddUserModal ref="modalRef" v-model:open="isOpen" :is-editing="isEditing" @save="handleSave" />
 
     <!-- Manage Roles Modal -->
-    <ManageUserRolesModal ref="manageRolesModalRef" v-model:open="isManageRolesOpen" :user-id="manageRolesUserId" @save="handleManageRolesSave" />
+    <ManageUserRolesModal ref="manageRolesModalRef" v-model:open="isManageRolesOpen" :user-id="manageRolesUserId"
+        @save="handleManageRolesSave" />
 </template>

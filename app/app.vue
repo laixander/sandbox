@@ -42,5 +42,6 @@ if (import.meta.client) {
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
+    <DemoFab />
   </UApp>
 </template>

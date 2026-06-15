@@ -16,7 +16,7 @@ const notificationStore = useNotificationStore()
 
 const allNavItems = computed<NavigationMenuItem[]>(() => [
     { type: 'label', label: 'Menu' },
-    { label: 'Dashboard', icon: 'i-lucide-chart-pie', to: '/', meta: { adminOnly: true } },
+    { label: 'Dashboard', icon: 'i-lucide-chart-pie', to: '/' },
     { label: 'CRUD', icon: 'i-lucide-folder-open', to: '/crud' },
     { label: 'Roles', icon: 'i-lucide-shield', to: '/roles' },
     { label: 'Activity Logs', icon: 'i-lucide-activity', to: '/activity-logs' },
@@ -29,19 +29,31 @@ const allNavItems = computed<NavigationMenuItem[]>(() => [
             variant: notificationStore.unreadCount > 0 ? 'solid' : 'soft',
             color: notificationStore.unreadCount > 0 ? 'primary' : 'neutral',
             class: 'rounded-full'
-        },
-        meta: { adminOnly: true }
+        }
     },
     { label: 'Kanban', icon: 'i-lucide-kanban', to: '/kanban' },
-    { label: 'Wizard', icon: 'i-lucide-wand-sparkles', to: '/wizard', meta: { adminOnly: true } },
-    // { label: 'Settings', icon: 'i-lucide-settings', to: '/settings' },
+    { label: 'Wizard', icon: 'i-lucide-wand-sparkles', to: '/wizard' },
 ])
 
-const items = computed<NavigationMenuItem[][]>(() => [
-    [
-        ...allNavItems.value.filter((item: NavigationMenuItem) => !(item as any).meta?.adminOnly || isAdmin.value)
+const { role } = useDemoAuth()
+
+const isAuthorized = computed(() => {
+    // If it's a public route or docs, always authorized
+    if (route.path.startsWith('/docs')) return true
+    
+    const pages = role.value?.pages || []
+    return pages.some(p => route.path === p || route.path.startsWith(p + '/'))
+})
+
+const items = computed<NavigationMenuItem[][]>(() => {
+    const pages = role.value?.pages || []
+    return [
+        allNavItems.value.filter((item: NavigationMenuItem) => {
+            if (item.type === 'label') return true
+            return item.to && pages.includes(item.to as string)
+        })
     ]
-])
+})
 
 const isCollapsed = computed(() => collapsible.value === 'icon' && !open.value)
 const pageTitle = computed(() => route.meta.title as string)
@@ -58,7 +70,7 @@ const pageTitle = computed(() => route.meta.title as string)
                 close>
                 <template #header="{ close }">
                     <div class="flex items-center gap-2.5">
-                        <UIcon name="i-ph-codesandbox-logo-duotone" class="size-8 shrink-0 text-primary" />
+                        <UIcon name="i-ph-stack-duotone" class="size-8 shrink-0 text-primary" />
                         <span v-if="!isCollapsed"
                             class="font-black text-neutral-900 dark:text-white tracking-tight">Sand<span
                                 class="text-primary">Box</span></span>
@@ -103,10 +115,10 @@ const pageTitle = computed(() => route.meta.title as string)
                     'flex-1',
                     route.meta.isTable ? 'flex flex-col overflow-hidden min-h-0' : 'p-4 overflow-y-auto scrollbar'
                 ]">
-                    <slot />
+                    <AuthGate v-if="!isAuthorized" title="Access Denied" description="You do not have permission to view this page." />
+                    <slot v-else />
                 </div>
             </div>
         </div>
-        <DemoFab />
     </ClientOnly>
 </template>

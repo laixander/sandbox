@@ -20,6 +20,11 @@ async function onSubmit() {
     isSaving.value = true
     emit('save', selectedRoleIds.value)
 }
+
+const roleItems = computed(() => roleStore.roles.map((role: any) => ({
+    value: role.id,
+    label: role.name
+})))
 </script>
 
 <template>
@@ -27,20 +32,8 @@ async function onSubmit() {
         <template #body>
             <div class="space-y-3">
                 <div class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Assign Roles</div>
-                <div class="space-y-2">
-                    <UCheckbox
-                        v-for="role in roleStore.roles"
-                        :key="role.id"
-                        :name="role.id"
-                        :label="role.name"
-                        :model-value="selectedRoleIds.includes(role.id)"
-                        @update:model-value="(val: boolean) => { 
-                            if(val) selectedRoleIds.push(role.id); 
-                            else selectedRoleIds = selectedRoleIds.filter((id: string) => id !== role.id); 
-                        }"
-                    />
-                </div>
-                <div v-if="roleStore.roles.length === 0" class="text-sm text-muted">
+                <UCheckboxGroup v-if="roleItems.length" v-model="selectedRoleIds" :items="roleItems" name="roles" />
+                <div v-else class="text-sm text-muted">
                     No roles available. Please create some roles first.
                 </div>
             </div>

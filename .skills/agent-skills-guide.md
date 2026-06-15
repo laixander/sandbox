@@ -97,7 +97,7 @@ The app has **two layouts**:
 
 | Layout | File | When to use |
 |---|---|---|
-| `default` | `app/layouts/default.vue` | All authenticated pages (sidebar, header, DemoFab) |
+| `default` | `app/layouts/default.vue` | All authenticated pages (sidebar, header) |
 | `clean` | `app/layouts/clean.vue` | Unauthenticated pages (login). Just `<slot />` |
 
 **`default.vue`** key details:
@@ -107,27 +107,26 @@ The app has **two layouts**:
 - A **`#header-actions-teleport`** div — pages use `<Teleport to="#header-actions-teleport">` inside `<ClientOnly>` to inject action buttons into the top-right of the header bar
 - Content area applies `flex flex-col overflow-hidden min-h-0` when `route.meta.isTable === true`
 - Content area applies `p-4 overflow-y-auto scrollbar` for non-table pages
-- **`DemoFab`** floating button for seeding/resetting data (bottom-right corner)
-- Nav items are in **`allNavItems: NavigationMenuItem[]`** — mark Admin-only items with `meta: { adminOnly: true }`
-- `items` is a `computed<NavigationMenuItem[][]>` that filters `allNavItems` based on `useDemoAuth().isAdmin`
+- Nav items are in **`allNavItems: NavigationMenuItem[]`**
+- `items` is a `computed<NavigationMenuItem[][]>` that automatically filters `allNavItems` so that only routes existing in the current user's `role.pages` array are shown
 
 ### Auth System
-- **`app/types/auth.ts`** — `SystemRole = 'Admin' | 'Staff'` and `AuthUser { name, role }`
-- **`app/stores/authStore.ts`** — options API store with `login(role)`, `logout()` actions; `isAuthenticated`, `isAdmin`, `isStaff` getters; persisted to localStorage
-- **`app/composables/useDemoAuth.ts`** — auto-imported ergonomic wrapper. Returns: `{ currentUser, isAuthenticated, role, isAdmin, isStaff, setRole, logout }`
+- **`app/stores/roleStore.ts`** — Dynamic roles are defined here. Each role has a `pages` array dictating what routes they can access.
+- **`app/types/auth.ts`** — `AuthUser { name, roleId }`
+- **`app/stores/authStore.ts`** — options API store with `login(roleId)`, `logout()` actions; `isAuthenticated` and `role` (which fetches the full `Role` object from `roleStore`) getters; persisted to localStorage.
+- **`app/composables/useDemoAuth.ts`** — auto-imported ergonomic wrapper. Returns: `{ currentUser, isAuthenticated, role, isAdmin, isStaff, setRole, logout }`. `role` is the full active `Role` object.
 - **`app/middleware/auth.global.ts`** — global route guard (client-only via `import.meta.server` check):
   - Unauthenticated → redirect `/login`
-  - Authenticated on `/login` → redirect to home (`/` for Admin, `/crud` for Staff)
-  - Staff accessing `/` → redirect to `/crud`
-- **`app/pages/login.vue`** — uses `definePageMeta({ layout: false })` to opt out of all layouts; two roles: `Admin` and `Staff`
-- **Role hierarchy**: Admin has full access (including `/`); Staff accesses `/crud` and `/activity-logs` only
+  - Authenticated on `/login` → redirect to the first available page in their `role.pages`
+  - Note: Unauthorized page access is NOT redirected. The navigation proceeds, but `default.vue` renders `<AuthGate />` instead of the page content.
+- **`app/pages/login.vue`** — uses `definePageMeta({ layout: false })` to opt out of all layouts; dynamically lists all roles from `roleStore`.
 
 ### Page Convention
 - **`definePageMeta({ title: '...', isTable: true })`** must be the first statement in `<script setup>`
 - `isTable: true` activates the full-height flex layout for tables/card grids
 - `layout: false` — used on the login page to bypass all layouts entirely (bare full-screen page)
 - **`PageHeading`** component replaces raw `<header>` — use with `forTable` prop for table pages
-- To add a new page to the sidebar, add it to `allNavItems` in `default.vue`; add `meta: { adminOnly: true }` if it should only appear for Admins
+- To add a new page to the sidebar, add it to `allNavItems` in `default.vue`. Then, make sure to add the page path to the `availablePages` array in `app/components/AddRoleModal.vue` and update `roleStore.ts` to grant default access to the Admin role.
 
 ### Special Files
 
@@ -171,7 +170,7 @@ const props = defineProps<{ error: NuxtError }>()
 | `TableColumnToggle` | Column visibility dropdown. Only shown when `viewMode === 'list'` |
 | `StatusBadge` | Colored badge for status/category values |
 | `StatCard` | KPI summary card for dashboard use. Driven by store state, never hardcoded |
-| `DemoFab` | Floating seeder/reset button — wired to all active entity stores (user + dashboard) |
+| `DemoFab` | Global draggable floating seeder/reset button placed in `app.vue` — wired to all active entity stores |
 | `UserMenu` | Sidebar footer: theme color/neutral switcher + logout |
 | `Add<Entity>Modal` | Extracted per-entity form modal with Zod schema. Uses `defineModel('open')`, `defineExpose({ reset })`, and emits `@save` with validated data |
 
@@ -350,7 +349,7 @@ Registers a new status string in `StatusBadge.vue`'s `colorMap`. Covers choosing
 Creates a new auto-imported composable in `app/composables/` following the `useAppToast` pattern. Covers three patterns: wrapping a Nuxt built-in, reactive state + methods, and computed helpers over a store.
 
 ### `add-role.md` — New System Role
-Coordinates changes across all 5 auth files in one pass: adds the role to the `SystemRole` union type, creates a demo user profile in `DEMO_USERS`, adds the `roleOptions` entry and redirect branch in `login.vue`, defines access rules in `auth.global.ts`, and optionally updates sidebar nav visibility in `default.vue`. TypeScript exhaustiveness check on `DEMO_USERS` catches any missed file automatically.
+Roles are now fully dynamic. This skill explains how to add a default/seed role to `roleStore.ts` which automatically populates the login dropdown and dictates page access via the `pages` array. No other files need to be modified.
 
 ---
 
@@ -401,4 +400,4 @@ The agent will read the file with `IsSkillFile: true`, treating it as executable
 | `add-form-modal.md` | Validated form modal: Zod schema, `defineExpose({ reset })`, `@save` emit |
 | `add-status-badge-value.md` | Add a status to `StatusBadge`'s colorMap + use in table/card view |
 | `add-composable.md` | Auto-imported composable following `useAppToast` patterns |
-| `add-role.md` | New system role: type → store → login → middleware → nav visibility |
+| `add-role.md` | Add a default dynamic role to `roleStore.ts` with route permissions |
