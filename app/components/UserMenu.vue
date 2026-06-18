@@ -8,7 +8,7 @@ defineProps<{
 // const colorMode = useColorMode()
 // const appConfig = useAppConfig()
 const router = useRouter()
-const { currentUser, isAdmin, logout } = useDemoAuth()
+const { currentUser, role, isAdmin, logout } = useDemoAuth()
 
 // const colors = ['red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose']
 // const neutrals = ['slate', 'gray', 'zinc', 'neutral', 'stone', 'taupe', 'mauve', 'mist', 'olive']
@@ -104,7 +104,7 @@ const items = computed<DropdownMenuItem[][]>(() => [
                 <UAvatar :src="`https://api.dicebear.com/10.x/thumbs/svg?seed=${avatarSeed}`"
                     :alt="currentUser?.name ?? 'User'" size="xs" />
                 <span v-if="!collapsed" class="flex-1 truncate">{{ currentUser?.name ?? 'Guest' }}</span>
-                <UBadge v-if="!collapsed" :label="currentUser?.role ?? ''" :color="isAdmin ? 'primary' : 'neutral'"
+                <UBadge v-if="!collapsed" :label="role?.name ?? ''" :color="isAdmin ? 'primary' : 'neutral'"
                     variant="soft" size="sm" class="shrink-0" />
             </div>
         </UButton>
