@@ -33,6 +33,13 @@ const allNavItems = computed<NavigationMenuItem[]>(() => [
     },
     { label: 'Kanban', icon: 'i-lucide-kanban', to: '/kanban' },
     { label: 'Wizard', icon: 'i-lucide-wand-sparkles', to: '/wizard' },
+    {
+        label: 'UI Kits',
+        icon: 'i-lucide-square-mouse-pointer',
+        children: [
+            { label: 'Cards', to: '/cards' }
+        ]
+    }
 ])
 
 const { role } = useDemoAuth()
@@ -40,21 +47,42 @@ const { role } = useDemoAuth()
 const isAuthorized = computed(() => {
     // If it's a public route or docs, always authorized
     if (route.path.startsWith('/docs')) return true
-    
+
     const pages = role.value?.pages || []
     return pages.some(p => route.path === p || route.path.startsWith(p + '/'))
 })
 
 const items = computed<NavigationMenuItem[][]>(() => {
     const pages = role.value?.pages || []
-    return [
-        allNavItems.value.filter((item: NavigationMenuItem) => {
-            if (item.type === 'label') return true
-            return item.to && pages.includes(item.to as string)
-        })
-    ]
-})
 
+    const filtered = allNavItems.value.reduce<NavigationMenuItem[]>((acc, item) => {
+        if (item.type === 'label') {
+            acc.push(item)
+            return acc
+        }
+
+        if (item.children && item.children.length > 0) {
+            const allowedChildren = item.children.filter(
+                (child) => child.to && pages.includes(child.to as string)
+            )
+            if (allowedChildren.length > 0) {
+                const hasActiveChild = allowedChildren.some(
+                    (child) => child.to && (route.path === child.to || route.path.startsWith(child.to as string + '/'))
+                )
+                acc.push({ ...item, children: allowedChildren, defaultOpen: hasActiveChild })
+            }
+            return acc
+        }
+
+        if (item.to && pages.includes(item.to as string)) {
+            acc.push(item)
+        }
+
+        return acc
+    }, [])
+
+    return [filtered]
+})
 const isCollapsed = computed(() => collapsible.value === 'icon' && !open.value)
 const pageTitle = computed(() => route.meta.title as string)
 </script>
@@ -115,7 +143,8 @@ const pageTitle = computed(() => route.meta.title as string)
                     'flex-1',
                     route.meta.isTable ? 'flex flex-col overflow-hidden min-h-0' : 'p-4 overflow-y-auto scrollbar'
                 ]">
-                    <AuthGate v-if="!isAuthorized" title="Access Denied" description="You do not have permission to view this page." />
+                    <AuthGate v-if="!isAuthorized" title="Access Denied"
+                        description="You do not have permission to view this page." />
                     <slot v-else />
                 </div>
             </div>

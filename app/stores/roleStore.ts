@@ -4,7 +4,7 @@ import type { Role } from '~/types/role'
 export const useRoleStore = defineStore('roleStore', {
     state: () => ({
         roles: [
-            { id: 'role-admin', name: 'Admin', description: 'Administrator with full access', pages: ['/', '/crud', '/roles', '/activity-logs', '/kanban', '/settings', '/notifications', '/wizard'] },
+            { id: 'role-admin', name: 'Admin', description: 'Administrator with full access', pages: ['/', '/crud', '/roles', '/activity-logs', '/kanban', '/settings', '/notifications', '/wizard', '/cards'] },
             { id: 'role-staff', name: 'Staff', description: 'Regular staff member', pages: ['/', '/crud', '/kanban', '/notifications'] },
         ] as Role[],
         isLoading: false,
